@@ -256,7 +256,16 @@ export default function Commandes() {
                           {formatDZD(c.montantTotal)}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button asChild size="icon" variant="ghost">
+                          <Button
+                            asChild
+                            size="icon"
+                            variant="ghost"
+                            disabled={[
+                              'EN_TRAITEMENT',
+                              'TERMINEE',
+                              'ANNULEE',
+                            ].includes(c.statut)}
+                          >
                             <Link to={`/commandes/${c.id}/modifier`}>
                               <Pencil className="h-4 w-4" />
                             </Link>

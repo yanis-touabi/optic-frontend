@@ -70,16 +70,34 @@ export default function NouveauBon() {
     if (!pickProduit) return;
     const p = produits.find((x) => x.id === pickProduit);
     if (!p) return;
-    setLignes((l) => [
-      ...l,
-      {
-        id: crypto.randomUUID(),
-        produitId: p.id,
-        designation: `${p.nom}${p.marque ? ` — ${p.marque}` : ''}`,
-        quantite: 1,
-        prixUnitaire: p.prix,
-      },
-    ]);
+
+    setLignes((currentLignes) => {
+      const existingIndex = currentLignes.findIndex(
+        (ligne) => ligne.produitId === p.id,
+      );
+
+      if (existingIndex !== -1) {
+        const newLignes = [...currentLignes];
+        newLignes[existingIndex] = {
+          ...newLignes[existingIndex],
+          quantite: newLignes[existingIndex].quantite + 1,
+        };
+        toast.success('Quantité mise à jour');
+        return newLignes;
+      }
+
+      return [
+        ...currentLignes,
+        {
+          id: crypto.randomUUID(),
+          produitId: p.id,
+          designation: `${p.nom}${p.marque ? ` — ${p.marque}` : ''}`,
+          quantite: 1,
+          prixUnitaire: p.prix,
+        },
+      ];
+    });
+
     setPickProduit('');
   };
 

@@ -74,6 +74,10 @@ export default function EditerBon() {
     [lignes],
   );
 
+  // Check if order is locked (cannot modify articles)
+  const isLocked =
+    cmd && ['EN_TRAITEMENT', 'TERMINEE', 'ANNULEE'].includes(cmd.statut);
+
   // When stock is already applied (EN_TRAITEMENT/TERMINEE), add original quantities
   // back to "available" so the user can re-pick the same products without false errors.
   const stockLocked = cmd
@@ -98,16 +102,34 @@ export default function EditerBon() {
     if (!pickProduit) return;
     const p = produits.find((x) => x.id === pickProduit);
     if (!p) return;
-    setLignes((l) => [
-      ...l,
-      {
-        id: crypto.randomUUID(),
-        produitId: p.id,
-        designation: `${p.nom}${p.marque ? ` — ${p.marque}` : ''}`,
-        quantite: 1,
-        prixUnitaire: p.prix,
-      },
-    ]);
+
+    setLignes((currentLignes) => {
+      const existingIndex = currentLignes.findIndex(
+        (ligne) => ligne.produitId === p.id,
+      );
+
+      if (existingIndex !== -1) {
+        const newLignes = [...currentLignes];
+        newLignes[existingIndex] = {
+          ...newLignes[existingIndex],
+          quantite: newLignes[existingIndex].quantite + 1,
+        };
+        toast.success('Quantité mise à jour');
+        return newLignes;
+      }
+
+      return [
+        ...currentLignes,
+        {
+          id: crypto.randomUUID(),
+          produitId: p.id,
+          designation: `${p.nom}${p.marque ? ` — ${p.marque}` : ''}`,
+          quantite: 1,
+          prixUnitaire: p.prix,
+        },
+      ];
+    });
+
     setPickProduit('');
   };
   const updateLigne = (lid: string, patch: Partial<LigneCommande>) =>
@@ -242,10 +264,20 @@ export default function EditerBon() {
           <Card className="shadow-[var(--shadow-card)]">
             <CardHeader>
               <CardTitle className="text-base">Articles</CardTitle>
+              {isLocked && (
+                <p className="text-sm text-destructive">
+                  Cette commande ne peut plus être modifiée car elle est déjà
+                  traitée.
+                </p>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2">
-                <Select value={pickProduit} onValueChange={setPickProduit}>
+                <Select
+                  value={pickProduit}
+                  onValueChange={setPickProduit}
+                  disabled={isLocked}
+                >
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Choisir un produit..." />
                   </SelectTrigger>
@@ -257,7 +289,7 @@ export default function EditerBon() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button onClick={addLigne} disabled={!pickProduit}>
+                <Button onClick={addLigne} disabled={!pickProduit || isLocked}>
                   <Plus className="h-4 w-4" />
                   Ajouter
                 </Button>
@@ -306,6 +338,7 @@ export default function EditerBon() {
                                 quantite: Number(e.target.value),
                               })
                             }
+                            disabled={isLocked}
                           />
                         </TableCell>
                         <TableCell>
@@ -318,6 +351,7 @@ export default function EditerBon() {
                                 prixUnitaire: Number(e.target.value),
                               })
                             }
+                            disabled={isLocked}
                           />
                         </TableCell>
                         <TableCell className="text-right font-medium">
@@ -328,6 +362,7 @@ export default function EditerBon() {
                             size="icon"
                             variant="ghost"
                             onClick={() => removeLigne(l.id)}
+                            disabled={isLocked}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
