@@ -1,5 +1,5 @@
-import { AlertTriangle } from "lucide-react";
-import type { StockIssue } from "@/lib/stock-validation";
+import { AlertTriangle } from 'lucide-react';
+import type { StockIssue } from '@/lib/stock-validation';
 
 export function StockAlert({ issues }: { issues: StockIssue[] }) {
   if (issues.length === 0) return null;
@@ -12,7 +12,8 @@ export function StockAlert({ issues }: { issues: StockIssue[] }) {
       <ul className="space-y-1 text-destructive/90 list-disc pl-5">
         {issues.map((i) => (
           <li key={i.produitId}>
-            <span className="font-medium">{i.nom}</span> — disponible : {i.disponible}, demandé : {i.demande}{" "}
+            <span className="font-medium">{i.nom}</span> — disponible :{' '}
+            {i.disponible}, demandé : {i.demande}{' '}
             <span className="text-xs">(manquant : {i.manquant})</span>
           </li>
         ))}

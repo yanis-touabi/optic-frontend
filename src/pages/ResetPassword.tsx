@@ -1,7 +1,13 @@
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Eye } from 'lucide-react';
 
 export default function ResetPassword() {
   const nav = useNavigate();
@@ -15,18 +21,28 @@ export default function ResetPassword() {
           </div>
           <div>
             <div className="text-xl font-semibold">OptiShop</div>
-            <div className="text-xs text-muted-foreground">Réinitialisation</div>
+            <div className="text-xs text-muted-foreground">
+              Réinitialisation
+            </div>
           </div>
         </div>
         <Card>
           <CardHeader>
             <CardTitle>Non disponible</CardTitle>
             <CardDescription>
-              La réinitialisation de mot de passe n'est pas encore disponible sur le nouveau backend.
+              La réinitialisation de mot de passe n'est pas encore disponible
+              sur le nouveau backend.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button type="button" variant="outline" className="w-full" onClick={() => nav("/auth")}>Retour à la connexion</Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => nav('/auth')}
+            >
+              Retour à la connexion
+            </Button>
           </CardContent>
         </Card>
       </div>

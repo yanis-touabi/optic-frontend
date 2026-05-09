@@ -1,9 +1,15 @@
-import { Navigate, useLocation } from "react-router-dom";
-import { useAuth, type AppRole } from "@/lib/auth";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ShieldAlert, LogIn, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth, type AppRole } from '@/lib/auth';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ShieldAlert, LogIn, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface Props {
   children: JSX.Element;
@@ -39,7 +45,9 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
-              <Link to={`/auth?next=${encodeURIComponent(location.pathname)}`}>Se connecter</Link>
+              <Link to={`/auth?next=${encodeURIComponent(location.pathname)}`}>
+                Se connecter
+              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -48,8 +56,13 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
   }
 
   if (requireRole) {
-    const allowed = requireRole === "OPTICIEN" ? isManager : (requireRole === "ADMIN" ? isAdmin : hasRole(requireRole));
-    
+    const allowed =
+      requireRole === 'OPTICIEN'
+        ? isManager
+        : requireRole === 'ADMIN'
+          ? isAdmin
+          : hasRole(requireRole);
+
     if (!allowed) {
       return (
         <div className="min-h-screen grid place-items-center p-4">
@@ -60,7 +73,9 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
               </div>
               <CardTitle>Accès refusé</CardTitle>
               <CardDescription>
-                Vous n'avez pas les autorisations nécessaires (rôle requis : <strong>{requireRole}</strong>) pour accéder à cette page. Vos rôles actuels : {roles.length ? roles.join(", ") : "aucun"}.
+                Vous n'avez pas les autorisations nécessaires (rôle requis :{' '}
+                <strong>{requireRole}</strong>) pour accéder à cette page. Vos
+                rôles actuels : {roles.length ? roles.join(', ') : 'aucun'}.
               </CardDescription>
             </CardHeader>
             <CardContent>

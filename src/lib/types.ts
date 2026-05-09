@@ -1,15 +1,15 @@
-export type ProduitCategorie = "MONTURE" | "VERRE" | "ACCESSOIRE";
+export type ProduitCategorie = 'MONTURE' | 'VERRE' | 'ACCESSOIRE';
 export type CommandeStatut =
-  | "EN_ATTENTE"
-  | "EN_TRAITEMENT"
-  | "TERMINEE"
-  | "ANNULEE";
+  | 'EN_ATTENTE'
+  | 'EN_TRAITEMENT'
+  | 'TERMINEE'
+  | 'ANNULEE';
 export type FactureStatut =
-  | "EN_ATTENTE"
-  | "PARTIELLEMENT_PAYEE"
-  | "PAYEE"
-  | "EN_RETARD";
-export type PaiementMethode = "ESPECES" | "CARTE" | "VIREMENT" | "AUTRE";
+  | 'EN_ATTENTE'
+  | 'PARTIELLEMENT_PAYEE'
+  | 'PAYEE'
+  | 'EN_RETARD';
+export type PaiementMethode = 'ESPECES' | 'CARTE' | 'VIREMENT' | 'AUTRE';
 
 export interface Client {
   id: string;

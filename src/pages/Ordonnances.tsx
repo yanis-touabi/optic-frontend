@@ -1,24 +1,24 @@
-import { useState } from "react";
-import { PageHeader } from "@/components/PageHeader";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from 'react';
+import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -26,29 +26,29 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Printer, Loader2 } from "lucide-react";
-import { formatDate } from "@/lib/format";
+} from '@/components/ui/table';
+import { Plus, Pencil, Trash2, Printer, Loader2 } from 'lucide-react';
+import { formatDate } from '@/lib/format';
 import {
   useClients,
   useOrdonnances,
   useCreateOrdonnance,
   useUpdateOrdonnance,
   useDeleteOrdonnance,
-} from "@/lib/data";
-import type { Ordonnance } from "@/lib/types";
-import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+} from '@/lib/data';
+import type { Ordonnance } from '@/lib/types';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
-type Form = Omit<Ordonnance, "id" | "createdAt">;
+type Form = Omit<Ordonnance, 'id' | 'createdAt'>;
 
 const empty: Form = {
-  clientId: "",
-  nomMedecin: "",
-  notes: "",
+  clientId: '',
+  nomMedecin: '',
+  notes: '',
 };
 
-const numOrU = (v: string) => (v === "" ? undefined : Number(v));
+const numOrU = (v: string) => (v === '' ? undefined : Number(v));
 
 export default function Ordonnances() {
   const { data: clients = [] } = useClients();
@@ -64,39 +64,108 @@ export default function Ordonnances() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ ...empty, clientId: clients[0]?.id ?? "" });
+    setForm({ ...empty, clientId: clients[0]?.id ?? '' });
     setOpen(true);
   };
   const openEdit = (o: Ordonnance) => {
     setEditing(o);
-    setForm({ ...o });
+
+    setForm({
+      clientId: o.clientId ?? '',
+
+      datePrescription: o.datePrescription ?? '',
+      dateExpiration: o.dateExpiration ?? '',
+
+      nomMedecin: o.nomMedecin ?? '',
+      notes: o.notes ?? '',
+
+      odSphere: o.odSphere,
+      odCylindre: o.odCylindre,
+      odAxe: o.odAxe,
+      odAddition: o.odAddition,
+      odPrisme: o.odPrisme,
+      odBase: o.odBase,
+
+      ogSphere: o.ogSphere,
+      ogCylindre: o.ogCylindre,
+      ogAxe: o.ogAxe,
+      ogAddition: o.ogAddition,
+      ogPrisme: o.ogPrisme,
+      ogBase: o.ogBase,
+
+      ecartOd: o.ecartOd,
+      ecartOg: o.ecartOg,
+
+      hauteurOd: o.hauteurOd,
+      hauteurOg: o.hauteurOg,
+
+      distancePupillaire: o.distancePupillaire,
+    });
+
     setOpen(true);
   };
 
   const save = async () => {
-    if (!form.clientId) return toast.error("Sélectionnez un client");
-    console.log("Saving ordonnance", form);
+    if (!form.clientId) return toast.error('Sélectionnez un client');
+    console.log('Saving ordonnance', form);
     try {
       if (editing) {
-        await updateMut.mutateAsync({ id: editing.id, patch: form });
-        toast.success("Ordonnance mise à jour");
+        const payload = {
+          clientId: form.clientId,
+
+          datePrescription: form.datePrescription,
+          dateExpiration: form.dateExpiration,
+
+          nomMedecin: form.nomMedecin,
+          notes: form.notes,
+
+          odSphere: form.odSphere,
+          odCylindre: form.odCylindre,
+          odAxe: form.odAxe,
+          odAddition: form.odAddition,
+          odPrisme: form.odPrisme,
+          odBase: form.odBase,
+
+          ogSphere: form.ogSphere,
+          ogCylindre: form.ogCylindre,
+          ogAxe: form.ogAxe,
+          ogAddition: form.ogAddition,
+          ogPrisme: form.ogPrisme,
+          ogBase: form.ogBase,
+
+          ecartOd: form.ecartOd,
+          ecartOg: form.ecartOg,
+
+          hauteurOd: form.hauteurOd,
+          hauteurOg: form.hauteurOg,
+
+          distancePupillaire: form.distancePupillaire,
+        };
+
+        if (editing) {
+          await updateMut.mutateAsync({
+            id: editing.id,
+            patch: payload,
+          });
+        }
+        toast.success('Ordonnance mise à jour');
       } else {
         await createMut.mutateAsync(form);
-        toast.success("Ordonnance ajoutée");
+        toast.success('Ordonnance ajoutée');
       }
       setOpen(false);
     } catch (e: any) {
-      toast.error(e.message ?? "Erreur");
+      toast.error(e.message ?? 'Erreur');
     }
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Supprimer cette ordonnance ?")) return;
+    if (!confirm('Supprimer cette ordonnance ?')) return;
     try {
       await deleteMut.mutateAsync(id);
-      toast.success("Supprimée");
+      toast.success('Supprimée');
     } catch (e: any) {
-      toast.error(e.message ?? "Erreur");
+      toast.error(e.message ?? 'Erreur');
     }
   };
 
@@ -152,17 +221,17 @@ export default function Ordonnances() {
                     return (
                       <TableRow key={o.id}>
                         <TableCell className="font-medium">
-                          {cl ? `${cl.prenom} ${cl.nom}` : "—"}
+                          {cl ? `${cl.prenom} ${cl.nom}` : '—'}
                         </TableCell>
-                        <TableCell>{o.nomMedecin || "—"}</TableCell>
+                        <TableCell>{o.nomMedecin || '—'}</TableCell>
                         <TableCell>{formatDate(o.datePrescription)}</TableCell>
                         <TableCell className="font-mono text-xs">
-                          {o.odSphere ?? "—"} / {o.odCylindre ?? "—"} /{" "}
-                          {o.odAxe ?? "—"}°
+                          {o.odSphere ?? '—'} / {o.odCylindre ?? '—'} /{' '}
+                          {o.odAxe ?? '—'}°
                         </TableCell>
                         <TableCell className="font-mono text-xs">
-                          {o.ogSphere ?? "—"} / {o.ogCylindre ?? "—"} /{" "}
-                          {o.ogAxe ?? "—"}°
+                          {o.ogSphere ?? '—'} / {o.ogCylindre ?? '—'} /{' '}
+                          {o.ogAxe ?? '—'}°
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -201,7 +270,7 @@ export default function Ordonnances() {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editing ? "Modifier l'ordonnance" : "Nouvelle ordonnance"}
+              {editing ? "Modifier l'ordonnance" : 'Nouvelle ordonnance'}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -210,7 +279,7 @@ export default function Ordonnances() {
                 <Label>Client *</Label>
                 <Select
                   value={form.clientId}
-                  onValueChange={(v) => set("clientId", v)}
+                  onValueChange={(v) => set('clientId', v)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner..." />
@@ -228,23 +297,23 @@ export default function Ordonnances() {
                 <Label>Nom du médecin</Label>
                 <Input
                   value={form.nomMedecin}
-                  onChange={(e) => set("nomMedecin", e.target.value)}
+                  onChange={(e) => set('nomMedecin', e.target.value)}
                 />
               </div>
               <div>
                 <Label>Date prescription</Label>
                 <Input
                   type="date"
-                  value={form.datePrescription ?? ""}
-                  onChange={(e) => set("datePrescription", e.target.value)}
+                  value={form.datePrescription ?? ''}
+                  onChange={(e) => set('datePrescription', e.target.value)}
                 />
               </div>
               <div>
                 <Label>Date expiration</Label>
                 <Input
                   type="date"
-                  value={form.dateExpiration ?? ""}
-                  onChange={(e) => set("dateExpiration", e.target.value)}
+                  value={form.dateExpiration ?? ''}
+                  onChange={(e) => set('dateExpiration', e.target.value)}
                 />
               </div>
               <div>
@@ -252,9 +321,9 @@ export default function Ordonnances() {
                 <Input
                   type="number"
                   step="0.5"
-                  value={form.distancePupillaire ?? ""}
+                  value={form.distancePupillaire ?? ''}
                   onChange={(e) =>
-                    set("distancePupillaire", numOrU(e.target.value))
+                    set('distancePupillaire', numOrU(e.target.value))
                   }
                 />
               </div>
@@ -270,8 +339,8 @@ export default function Ordonnances() {
                   <Input
                     type="number"
                     step="0.25"
-                    value={form.odSphere ?? ""}
-                    onChange={(e) => set("odSphere", numOrU(e.target.value))}
+                    value={form.odSphere ?? ''}
+                    onChange={(e) => set('odSphere', numOrU(e.target.value))}
                   />
                 </div>
                 <div>
@@ -279,17 +348,17 @@ export default function Ordonnances() {
                   <Input
                     type="number"
                     step="0.25"
-                    value={form.odCylindre ?? ""}
-                    onChange={(e) => set("odCylindre", numOrU(e.target.value))}
+                    value={form.odCylindre ?? ''}
+                    onChange={(e) => set('odCylindre', numOrU(e.target.value))}
                   />
                 </div>
                 <div>
                   <Label className="text-xs">Axe</Label>
                   <Input
                     type="number"
-                    value={form.odAxe ?? ""}
+                    value={form.odAxe ?? ''}
                     onChange={(e) =>
-                      set("odAxe", numOrU(e.target.value) as number)
+                      set('odAxe', numOrU(e.target.value) as number)
                     }
                   />
                 </div>
@@ -298,8 +367,8 @@ export default function Ordonnances() {
                   <Input
                     type="number"
                     step="0.25"
-                    value={form.odAddition ?? ""}
-                    onChange={(e) => set("odAddition", numOrU(e.target.value))}
+                    value={form.odAddition ?? ''}
+                    onChange={(e) => set('odAddition', numOrU(e.target.value))}
                   />
                 </div>
                 <div>
@@ -307,15 +376,15 @@ export default function Ordonnances() {
                   <Input
                     type="number"
                     step="0.5"
-                    value={form.odPrisme ?? ""}
-                    onChange={(e) => set("odPrisme", numOrU(e.target.value))}
+                    value={form.odPrisme ?? ''}
+                    onChange={(e) => set('odPrisme', numOrU(e.target.value))}
                   />
                 </div>
                 <div>
                   <Label className="text-xs">Base</Label>
                   <Input
-                    value={form.odBase ?? ""}
-                    onChange={(e) => set("odBase", e.target.value)}
+                    value={form.odBase ?? ''}
+                    onChange={(e) => set('odBase', e.target.value)}
                   />
                 </div>
                 <div>
@@ -323,8 +392,8 @@ export default function Ordonnances() {
                   <Input
                     type="number"
                     step="0.5"
-                    value={form.ecartOd ?? ""}
-                    onChange={(e) => set("ecartOd", numOrU(e.target.value))}
+                    value={form.ecartOd ?? ''}
+                    onChange={(e) => set('ecartOd', numOrU(e.target.value))}
                   />
                 </div>
                 <div>
@@ -332,8 +401,8 @@ export default function Ordonnances() {
                   <Input
                     type="number"
                     step="0.5"
-                    value={form.hauteurOd ?? ""}
-                    onChange={(e) => set("hauteurOd", numOrU(e.target.value))}
+                    value={form.hauteurOd ?? ''}
+                    onChange={(e) => set('hauteurOd', numOrU(e.target.value))}
                   />
                 </div>
               </div>
@@ -349,8 +418,8 @@ export default function Ordonnances() {
                   <Input
                     type="number"
                     step="0.25"
-                    value={form.ogSphere ?? ""}
-                    onChange={(e) => set("ogSphere", numOrU(e.target.value))}
+                    value={form.ogSphere ?? ''}
+                    onChange={(e) => set('ogSphere', numOrU(e.target.value))}
                   />
                 </div>
                 <div>
@@ -358,17 +427,17 @@ export default function Ordonnances() {
                   <Input
                     type="number"
                     step="0.25"
-                    value={form.ogCylindre ?? ""}
-                    onChange={(e) => set("ogCylindre", numOrU(e.target.value))}
+                    value={form.ogCylindre ?? ''}
+                    onChange={(e) => set('ogCylindre', numOrU(e.target.value))}
                   />
                 </div>
                 <div>
                   <Label className="text-xs">Axe</Label>
                   <Input
                     type="number"
-                    value={form.ogAxe ?? ""}
+                    value={form.ogAxe ?? ''}
                     onChange={(e) =>
-                      set("ogAxe", numOrU(e.target.value) as number)
+                      set('ogAxe', numOrU(e.target.value) as number)
                     }
                   />
                 </div>
@@ -377,8 +446,8 @@ export default function Ordonnances() {
                   <Input
                     type="number"
                     step="0.25"
-                    value={form.ogAddition ?? ""}
-                    onChange={(e) => set("ogAddition", numOrU(e.target.value))}
+                    value={form.ogAddition ?? ''}
+                    onChange={(e) => set('ogAddition', numOrU(e.target.value))}
                   />
                 </div>
                 <div>
@@ -386,15 +455,15 @@ export default function Ordonnances() {
                   <Input
                     type="number"
                     step="0.5"
-                    value={form.ogPrisme ?? ""}
-                    onChange={(e) => set("ogPrisme", numOrU(e.target.value))}
+                    value={form.ogPrisme ?? ''}
+                    onChange={(e) => set('ogPrisme', numOrU(e.target.value))}
                   />
                 </div>
                 <div>
                   <Label className="text-xs">Base</Label>
                   <Input
-                    value={form.ogBase ?? ""}
-                    onChange={(e) => set("ogBase", e.target.value)}
+                    value={form.ogBase ?? ''}
+                    onChange={(e) => set('ogBase', e.target.value)}
                   />
                 </div>
                 <div>
@@ -402,8 +471,8 @@ export default function Ordonnances() {
                   <Input
                     type="number"
                     step="0.5"
-                    value={form.ecartOg ?? ""}
-                    onChange={(e) => set("ecartOg", numOrU(e.target.value))}
+                    value={form.ecartOg ?? ''}
+                    onChange={(e) => set('ecartOg', numOrU(e.target.value))}
                   />
                 </div>
                 <div>
@@ -411,8 +480,8 @@ export default function Ordonnances() {
                   <Input
                     type="number"
                     step="0.5"
-                    value={form.hauteurOg ?? ""}
-                    onChange={(e) => set("hauteurOg", numOrU(e.target.value))}
+                    value={form.hauteurOg ?? ''}
+                    onChange={(e) => set('hauteurOg', numOrU(e.target.value))}
                   />
                 </div>
               </div>
@@ -422,7 +491,7 @@ export default function Ordonnances() {
               <Label>Notes</Label>
               <Textarea
                 value={form.notes}
-                onChange={(e) => set("notes", e.target.value)}
+                onChange={(e) => set('notes', e.target.value)}
               />
             </div>
           </div>

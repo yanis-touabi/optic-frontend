@@ -1,24 +1,24 @@
-import { useState } from "react";
-import { PageHeader } from "@/components/PageHeader";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from 'react';
+import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -26,33 +26,33 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Search, Loader2 } from "lucide-react";
-import { formatDZD } from "@/lib/format";
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Pencil, Trash2, Search, Loader2 } from 'lucide-react';
+import { formatDZD } from '@/lib/format';
 import {
   useProduits,
   useCreateProduit,
   useUpdateProduit,
   useDeleteProduit,
-} from "@/lib/data";
-import type { Produit, ProduitCategorie } from "@/lib/types";
-import { toast } from "sonner";
+} from '@/lib/data';
+import type { Produit, ProduitCategorie } from '@/lib/types';
+import { toast } from 'sonner';
 
-const empty: Omit<Produit, "id" | "createdAt"> = {
-  nom: "",
-  marque: "",
-  modele: "",
-  categorie: "MONTURE",
-  description: "",
+const empty: Omit<Produit, 'id' | 'createdAt'> = {
+  nom: '',
+  marque: '',
+  modele: '',
+  categorie: 'MONTURE',
+  description: '',
   prix: 0,
   stock: 0,
 };
 
 const catLabel: Record<ProduitCategorie, string> = {
-  MONTURE: "Monture",
-  VERRE: "Verre",
-  ACCESSOIRE: "Accessoire",
+  MONTURE: 'Monture',
+  VERRE: 'Verre',
+  ACCESSOIRE: 'Accessoire',
 };
 
 export default function Produits() {
@@ -61,7 +61,7 @@ export default function Produits() {
   const updateMut = useUpdateProduit();
   const deleteMut = useDeleteProduit();
 
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Produit | null>(null);
   const [form, setForm] = useState(empty);
@@ -79,11 +79,11 @@ export default function Produits() {
     setEditing(p);
 
     setForm({
-      nom: p.nom ?? "",
-      marque: p.marque ?? "",
-      modele: p.modele ?? "",
-      categorie: p.categorie ?? "MONTURE",
-      description: p.description ?? "",
+      nom: p.nom ?? '',
+      marque: p.marque ?? '',
+      modele: p.modele ?? '',
+      categorie: p.categorie ?? 'MONTURE',
+      description: p.description ?? '',
       prix: p.prix ?? 0,
       stock: p.stock ?? 0,
     });
@@ -92,7 +92,7 @@ export default function Produits() {
   };
 
   const save = async () => {
-    if (!form.nom.trim()) return toast.error("Le nom est requis");
+    if (!form.nom.trim()) return toast.error('Le nom est requis');
     try {
       if (editing) {
         const payload = {
@@ -109,24 +109,24 @@ export default function Produits() {
           id: editing.id,
           patch: payload,
         });
-        toast.success("Produit mis à jour");
+        toast.success('Produit mis à jour');
       } else {
         await createMut.mutateAsync(form);
-        toast.success("Produit ajouté");
+        toast.success('Produit ajouté');
       }
       setOpen(false);
     } catch (e: any) {
-      toast.error(e.message ?? "Erreur");
+      toast.error(e.message ?? 'Erreur');
     }
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Supprimer ce produit ?")) return;
+    if (!confirm('Supprimer ce produit ?')) return;
     try {
       await deleteMut.mutateAsync(id);
-      toast.success("Produit supprimé");
+      toast.success('Produit supprimé');
     } catch (e: any) {
-      toast.error(e.message ?? "Erreur");
+      toast.error(e.message ?? 'Erreur');
     }
   };
 
@@ -228,7 +228,7 @@ export default function Produits() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editing ? "Modifier le produit" : "Nouveau produit"}
+              {editing ? 'Modifier le produit' : 'Nouveau produit'}
             </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4">

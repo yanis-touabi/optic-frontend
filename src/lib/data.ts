@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "../api/apiClient";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../api/apiClient';
 import type {
   Client,
   Commande,
@@ -7,11 +7,11 @@ import type {
   LigneCommande,
   Ordonnance,
   Produit,
-} from "./types";
+} from './types';
 
 // ==================== CLIENTS ====================
 
-const CLIENTS_KEY = ["clients"] as const;
+const CLIENTS_KEY = ['clients'] as const;
 
 export const useClients = () =>
   useQuery({
@@ -25,7 +25,7 @@ export const useClients = () =>
 export const useCreateClient = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (c: Omit<Client, "id" | "createdAt">) => {
+    mutationFn: async (c: Omit<Client, 'id' | 'createdAt'>) => {
       const { data } = await apiClient.post<Client>('/clients', c);
       return data;
     },
@@ -36,7 +36,13 @@ export const useCreateClient = () => {
 export const useUpdateClient = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Client> }) => {
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Partial<Client>;
+    }) => {
       const { data } = await apiClient.patch<Client>(`/clients/${id}`, patch);
       return data;
     },
@@ -60,7 +66,7 @@ export const useDeleteClient = () => {
 
 // ==================== PRODUITS ====================
 
-const PRODUITS_KEY = ["produits"] as const;
+const PRODUITS_KEY = ['produits'] as const;
 
 export const useProduits = () =>
   useQuery({
@@ -74,7 +80,7 @@ export const useProduits = () =>
 export const useCreateProduit = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (p: Omit<Produit, "id" | "createdAt">) => {
+    mutationFn: async (p: Omit<Produit, 'id' | 'createdAt'>) => {
       const { data } = await apiClient.post<Produit>('/products', p);
       return data;
     },
@@ -85,7 +91,13 @@ export const useCreateProduit = () => {
 export const useUpdateProduit = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Produit> }) => {
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Partial<Produit>;
+    }) => {
       const { data } = await apiClient.patch<Produit>(`/products/${id}`, patch);
       return data;
     },
@@ -105,7 +117,7 @@ export const useDeleteProduit = () => {
 
 // ==================== ORDONNANCES ====================
 
-const ORDONNANCES_KEY = ["ordonnances"] as const;
+const ORDONNANCES_KEY = ['ordonnances'] as const;
 
 export const useOrdonnances = () =>
   useQuery({
@@ -119,7 +131,7 @@ export const useOrdonnances = () =>
 export const useCreateOrdonnance = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (o: Omit<Ordonnance, "id" | "createdAt">) => {
+    mutationFn: async (o: Omit<Ordonnance, 'id' | 'createdAt'>) => {
       const { data } = await apiClient.post<Ordonnance>('/prescriptions', o);
       return data;
     },
@@ -130,8 +142,17 @@ export const useCreateOrdonnance = () => {
 export const useUpdateOrdonnance = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Ordonnance> }) => {
-      const { data } = await apiClient.patch<Ordonnance>(`/prescriptions/${id}`, patch);
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Partial<Ordonnance>;
+    }) => {
+      const { data } = await apiClient.patch<Ordonnance>(
+        `/prescriptions/${id}`,
+        patch,
+      );
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ORDONNANCES_KEY }),
@@ -153,7 +174,7 @@ export const useDeleteOrdonnance = () => {
 
 // ==================== COMMANDES ====================
 
-const COMMANDES_KEY = ["commandes"] as const;
+const COMMANDES_KEY = ['commandes'] as const;
 
 export const useCommandes = () =>
   useQuery({
@@ -166,7 +187,7 @@ export const useCommandes = () =>
 
 export const useCommande = (id: string | undefined) =>
   useQuery({
-    queryKey: ["commande", id],
+    queryKey: ['commande', id],
     enabled: !!id,
     queryFn: async () => {
       const { data } = await apiClient.get<Commande>(`/orders/${id}`);
@@ -177,7 +198,7 @@ export const useCommande = (id: string | undefined) =>
 export interface CreateCommandeInput {
   clientId: string;
   ordonnanceId?: string;
-  lignes: Omit<LigneCommande, "id">[];
+  lignes: Omit<LigneCommande, 'id'>[];
   inclutPersonnalisation: boolean;
   detailsPersonnalisation: string;
   prixPersonnalisation?: number;
@@ -202,7 +223,7 @@ export interface UpdateCommandeInput {
   id: string;
   clientId: string;
   ordonnanceId?: string;
-  lignes: Omit<LigneCommande, "id">[];
+  lignes: Omit<LigneCommande, 'id'>[];
   montantTotal: number;
   notes: string;
   dateLivraisonPrevue?: string;
@@ -223,7 +244,7 @@ export const useUpdateCommande = () => {
     },
     onSuccess: (_d, v) => {
       qc.invalidateQueries({ queryKey: COMMANDES_KEY });
-      qc.invalidateQueries({ queryKey: ["commande", v.id] });
+      qc.invalidateQueries({ queryKey: ['commande', v.id] });
       qc.invalidateQueries({ queryKey: PRODUITS_KEY });
     },
   });
@@ -232,7 +253,13 @@ export const useUpdateCommande = () => {
 export const useUpdateCommandeStatut = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, statut }: { id: string; statut: CommandeStatut }) => {
+    mutationFn: async ({
+      id,
+      statut,
+    }: {
+      id: string;
+      statut: CommandeStatut;
+    }) => {
       await apiClient.patch(`/orders/${id}/statut`, { statut });
     },
     onSuccess: () => {

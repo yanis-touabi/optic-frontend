@@ -1,42 +1,42 @@
-import { useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye } from "lucide-react";
-import { apiClient } from "@/api/apiClient";
-import { useAuth } from "@/lib/auth";
-import { toast } from "sonner";
-import PasswordChecklist from "@/components/PasswordChecklist";
-import { strongPasswordSchema, isPasswordValid } from "@/lib/password-policy";
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Eye } from 'lucide-react';
+import { apiClient } from '@/api/apiClient';
+import { useAuth } from '@/lib/auth';
+import { toast } from 'sonner';
+import PasswordChecklist from '@/components/PasswordChecklist';
+import { strongPasswordSchema, isPasswordValid } from '@/lib/password-policy';
 
-const emailSchema = z.string().trim().email("Email invalide").max(255);
-const passwordSchema = z.string().min(1, "Requis").max(72);
-const nameSchema = z.string().trim().min(1, "Requis").max(100);
+const emailSchema = z.string().trim().email('Email invalide').max(255);
+const passwordSchema = z.string().min(1, 'Requis').max(72);
+const nameSchema = z.string().trim().min(1, 'Requis').max(100);
 
 export default function Auth() {
   const { user, loading, signIn: authSignIn } = useAuth();
   const nav = useNavigate();
   const [busy, setBusy] = useState(false);
   const [forgot, setForgot] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotEmail, setForgotEmail] = useState('');
 
   // sign in
-  const [siEmail, setSiEmail] = useState("");
-  const [siPwd, setSiPwd] = useState("");
+  const [siEmail, setSiEmail] = useState('');
+  const [siPwd, setSiPwd] = useState('');
   // sign up
-  const [suName, setSuName] = useState("");
-  const [suEmail, setSuEmail] = useState("");
-  const [suPwd, setSuPwd] = useState("");
+  const [suName, setSuName] = useState('');
+  const [suEmail, setSuEmail] = useState('');
+  const [suPwd, setSuPwd] = useState('');
 
   if (loading)
     return (
@@ -53,22 +53,22 @@ export default function Auth() {
       passwordSchema.parse(siPwd);
     } catch (err) {
       return toast.error(
-        err instanceof z.ZodError ? err.errors[0].message : "Champs invalides",
+        err instanceof z.ZodError ? err.errors[0].message : 'Champs invalides',
       );
     }
     setBusy(true);
     try {
-      const { data } = await apiClient.post("/auth/login", {
+      const { data } = await apiClient.post('/auth/login', {
         email: siEmail,
         password: siPwd,
       });
-      console.log("Login response:", data);
+      console.log('Login response:', data);
       await authSignIn(data.access_token);
-      toast.success("Connecté");
-      nav("/");
+      toast.success('Connecté');
+      nav('/');
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message || "Email ou mot de passe incorrect",
+        error.response?.data?.message || 'Email ou mot de passe incorrect',
       );
     } finally {
       setBusy(false);
@@ -83,19 +83,19 @@ export default function Auth() {
       strongPasswordSchema.parse(suPwd);
     } catch (err) {
       return toast.error(
-        err instanceof z.ZodError ? err.errors[0].message : "Champs invalides",
+        err instanceof z.ZodError ? err.errors[0].message : 'Champs invalides',
       );
     }
     setBusy(true);
     try {
-      const { data } = await apiClient.post("/auth/register", {
+      const { data } = await apiClient.post('/auth/register', {
         email: suEmail,
         password: suPwd,
         displayName: suName,
       });
       await authSignIn(data.access_token);
-      toast.success("Inscription réussie !");
-      nav("/");
+      toast.success('Inscription réussie !');
+      nav('/');
     } catch (error: any) {
       toast.error(
         error.response?.data?.message || "Erreur lors de l'inscription",
@@ -146,7 +146,7 @@ export default function Auth() {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={busy}>
-                  {busy ? "Envoi..." : "Envoyer le lien"}
+                  {busy ? 'Envoi...' : 'Envoyer le lien'}
                 </Button>
                 <Button
                   type="button"
@@ -184,7 +184,7 @@ export default function Auth() {
                       />
                     </div>
                     <Button type="submit" className="w-full" disabled={busy}>
-                      {busy ? "Connexion..." : "Se connecter"}
+                      {busy ? 'Connexion...' : 'Se connecter'}
                     </Button>
                     <button
                       type="button"
@@ -232,7 +232,7 @@ export default function Auth() {
                       className="w-full"
                       disabled={busy || !isPasswordValid(suPwd)}
                     >
-                      {busy ? "Création..." : "Créer mon compte"}
+                      {busy ? 'Création...' : 'Créer mon compte'}
                     </Button>
                   </form>
                 </TabsContent>

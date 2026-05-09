@@ -1,17 +1,17 @@
-import { useState } from "react";
-import { PageHeader } from "@/components/PageHeader";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from 'react';
+import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -19,25 +19,25 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Search, Loader2 } from "lucide-react";
-import type { Client } from "@/lib/types";
+} from '@/components/ui/table';
+import { Plus, Pencil, Trash2, Search, Loader2 } from 'lucide-react';
+import type { Client } from '@/lib/types';
 import {
   useClients,
   useCreateClient,
   useUpdateClient,
   useDeleteClient,
-} from "@/lib/data";
-import { toast } from "sonner";
+} from '@/lib/data';
+import { toast } from 'sonner';
 
-const empty: Omit<Client, "id" | "createdAt"> = {
-  nom: "",
-  prenom: "",
-  telephone: "",
-  email: "",
-  adresse: "",
-  notes: "",
-  dateNaissance: "",
+const empty: Omit<Client, 'id' | 'createdAt'> = {
+  nom: '',
+  prenom: '',
+  telephone: '',
+  email: '',
+  adresse: '',
+  notes: '',
+  dateNaissance: '',
 };
 
 export default function Clients() {
@@ -46,7 +46,7 @@ export default function Clients() {
   const updateMut = useUpdateClient();
   const deleteMut = useDeleteClient();
 
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
   const [form, setForm] = useState(empty);
@@ -66,20 +66,20 @@ export default function Clients() {
     setEditing(c);
 
     setForm({
-      nom: c.nom ?? "",
-      prenom: c.prenom ?? "",
-      telephone: c.telephone ?? "",
-      email: c.email ?? "",
-      adresse: c.adresse ?? "",
-      notes: c.notes ?? "",
-      dateNaissance: c.dateNaissance ?? "",
+      nom: c.nom ?? '',
+      prenom: c.prenom ?? '',
+      telephone: c.telephone ?? '',
+      email: c.email ?? '',
+      adresse: c.adresse ?? '',
+      notes: c.notes ?? '',
+      dateNaissance: c.dateNaissance ?? '',
     });
 
     setOpen(true);
   };
 
   const save = async () => {
-    if (!form.nom.trim()) return toast.error("Le nom est requis");
+    if (!form.nom.trim()) return toast.error('Le nom est requis');
 
     const payload = {
       nom: form.nom,
@@ -98,25 +98,25 @@ export default function Clients() {
           patch: payload,
         });
 
-        toast.success("Client mis à jour");
+        toast.success('Client mis à jour');
       } else {
         await createMut.mutateAsync(payload);
-        toast.success("Client ajouté");
+        toast.success('Client ajouté');
       }
 
       setOpen(false);
     } catch (e: any) {
-      toast.error(e.message ?? "Erreur");
+      toast.error(e.message ?? 'Erreur');
     }
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Supprimer ce client ?")) return;
+    if (!confirm('Supprimer ce client ?')) return;
     try {
       await deleteMut.mutateAsync(id);
-      toast.success("Client supprimé");
+      toast.success('Client supprimé');
     } catch (e: any) {
-      toast.error(e.message ?? "Erreur");
+      toast.error(e.message ?? 'Erreur');
     }
   };
 
@@ -178,10 +178,10 @@ export default function Clients() {
                       <TableCell className="font-medium">
                         {c.prenom} {c.nom}
                       </TableCell>
-                      <TableCell>{c.telephone || "—"}</TableCell>
-                      <TableCell>{c.email || "—"}</TableCell>
+                      <TableCell>{c.telephone || '—'}</TableCell>
+                      <TableCell>{c.email || '—'}</TableCell>
                       <TableCell className="max-w-xs truncate">
-                        {c.adresse || "—"}
+                        {c.adresse || '—'}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
@@ -212,7 +212,7 @@ export default function Clients() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editing ? "Modifier le client" : "Nouveau client"}
+              {editing ? 'Modifier le client' : 'Nouveau client'}
             </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4">
@@ -251,7 +251,7 @@ export default function Clients() {
               <Label>Date de naissance</Label>
               <Input
                 type="date"
-                value={form.dateNaissance ?? ""}
+                value={form.dateNaissance ?? ''}
                 onChange={(e) =>
                   setForm({ ...form, dateNaissance: e.target.value })
                 }

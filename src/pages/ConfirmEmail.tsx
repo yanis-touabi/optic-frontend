@@ -1,7 +1,13 @@
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Eye } from 'lucide-react';
 
 export default function ConfirmEmail() {
   const nav = useNavigate();
@@ -22,11 +28,19 @@ export default function ConfirmEmail() {
           <CardHeader>
             <CardTitle>Non disponible</CardTitle>
             <CardDescription>
-              La confirmation d'email n'est pas encore disponible sur le nouveau backend.
+              La confirmation d'email n'est pas encore disponible sur le nouveau
+              backend.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button type="button" variant="outline" className="w-full" onClick={() => nav("/auth")}>Retour à la connexion</Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => nav('/auth')}
+            >
+              Retour à la connexion
+            </Button>
           </CardContent>
         </Card>
       </div>

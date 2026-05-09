@@ -1,7 +1,13 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { apiClient } from "../api/apiClient";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react';
+import { apiClient } from '../api/apiClient';
 
-export type AppRole = "ADMIN" | "OPTICIEN";
+export type AppRole = 'ADMIN' | 'OPTICIEN';
 
 interface User {
   id: string;
@@ -28,9 +34,12 @@ interface AuthCtx {
 }
 
 const Ctx = createContext<AuthCtx>({
-  user: null, loading: true,
-  roles: [], rolesLoading: true,
-  isAdmin: false, isManager: false,
+  user: null,
+  loading: true,
+  roles: [],
+  rolesLoading: true,
+  isAdmin: false,
+  isManager: false,
   hasRole: () => false,
   signOut: async () => {},
   signIn: async () => {},
@@ -71,19 +80,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const roles = user?.roles ?? (user?.profile?.role ? [user.profile.role] : []);
-  const isAdmin = roles.includes("ADMIN");
+  const isAdmin = roles.includes('ADMIN');
   // Assuming OPTICIEN is like manager in old schema, adjust if needed
-  const isManager = roles.includes("OPTICIEN") || isAdmin;
+  const isManager = roles.includes('OPTICIEN') || isAdmin;
 
   return (
-    <Ctx.Provider value={{
-      user, loading,
-      roles, rolesLoading: loading, 
-      isAdmin, isManager,
-      hasRole: (r) => roles.includes(r),
-      signOut,
-      signIn,
-    }}>
+    <Ctx.Provider
+      value={{
+        user,
+        loading,
+        roles,
+        rolesLoading: loading,
+        isAdmin,
+        isManager,
+        hasRole: (r) => roles.includes(r),
+        signOut,
+        signIn,
+      }}
+    >
       {children}
     </Ctx.Provider>
   );

@@ -1,9 +1,9 @@
-import Barcode from "react-barcode";
-import type { Client, Ordonnance } from "@/lib/types";
-import { formatDate } from "@/lib/format";
+import Barcode from 'react-barcode';
+import type { Client, Ordonnance } from '@/lib/types';
+import { formatDate } from '@/lib/format';
 
 const fmt = (n?: number, d = 2) =>
-  n === undefined || n === null || Number.isNaN(n) ? "" : n.toFixed(d);
+  n === undefined || n === null || Number.isNaN(n) ? '' : n.toFixed(d);
 
 interface Props {
   ord: Ordonnance;
@@ -25,29 +25,29 @@ const ClientInfo = ({ client, ord }: Props) => (
   <div className="grid grid-cols-2 gap-6 mb-4 text-[12px]">
     <div>
       <div>
-        <span className="font-semibold">Client :</span>{" "}
-        {client ? `${client.prenom} ${client.nom}` : ""}
+        <span className="font-semibold">Client :</span>{' '}
+        {client ? `${client.prenom} ${client.nom}` : ''}
       </div>
       <div>
-        <span className="font-semibold">Tél :</span> {client?.telephone || ""}
+        <span className="font-semibold">Tél :</span> {client?.telephone || ''}
       </div>
       {client?.dateNaissance && (
         <div>
-          <span className="font-semibold">Né(e) le :</span>{" "}
+          <span className="font-semibold">Né(e) le :</span>{' '}
           {formatDate(client.dateNaissance)}
         </div>
       )}
     </div>
     <div className="text-right">
       <div>
-        <span className="font-semibold">Médecin :</span> {ord.nomMedecin || ""}
+        <span className="font-semibold">Médecin :</span> {ord.nomMedecin || ''}
       </div>
       <div>
-        <span className="font-semibold">Prescription :</span>{" "}
+        <span className="font-semibold">Prescription :</span>{' '}
         {formatDate(ord.datePrescription)}
       </div>
       <div>
-        <span className="font-semibold">Expiration :</span>{" "}
+        <span className="font-semibold">Expiration :</span>{' '}
         {formatDate(ord.dateExpiration)}
       </div>
     </div>
@@ -77,12 +77,12 @@ const RowOD = ({
     <td className="border border-black px-1 py-1">{fmt(vals.sph)}</td>
     <td className="border border-black px-1 py-1">{fmt(vals.cyl)}</td>
     <td className="border border-black px-1 py-1">
-      {vals.axe ?? ""}
-      {vals.axe !== undefined ? "°" : ""}
+      {vals.axe ?? ''}
+      {vals.axe !== undefined ? '°' : ''}
     </td>
     <td className="border border-black px-1 py-1">{fmt(vals.add)}</td>
     <td className="border border-black px-1 py-1">{fmt(vals.prisme)}</td>
-    <td className="border border-black px-1 py-1">{vals.base ?? ""}</td>
+    <td className="border border-black px-1 py-1">{vals.base ?? ''}</td>
   </tr>
 );
 
@@ -108,7 +108,7 @@ export function OrdonnanceClassique({ ord, client }: Props) {
         <thead>
           <tr className="bg-gray-100">
             <th className="border border-black px-1 py-1 w-16">Œil</th>
-            {["Sph", "Cyl", "Axe", "Add", "Prisme", "Base"].map((h) => (
+            {['Sph', 'Cyl', 'Axe', 'Add', 'Prisme', 'Base'].map((h) => (
               <th key={h} className="border border-black px-1 py-1">
                 {h}
               </th>
@@ -145,28 +145,28 @@ export function OrdonnanceClassique({ ord, client }: Props) {
       <div className="grid grid-cols-2 gap-6 text-[12px] mb-4">
         <div className="flex gap-3">
           <span>
-            <span className="font-semibold">Écart OD :</span>{" "}
+            <span className="font-semibold">Écart OD :</span>{' '}
             {fmt(ord.ecartOd, 1)}
           </span>
           <span>
-            <span className="font-semibold">Hauteur :</span>{" "}
+            <span className="font-semibold">Hauteur :</span>{' '}
             {fmt(ord.hauteurOd, 1)}
           </span>
         </div>
         <div className="flex gap-3 justify-end">
           <span>
-            <span className="font-semibold">Écart OG :</span>{" "}
+            <span className="font-semibold">Écart OG :</span>{' '}
             {fmt(ord.ecartOg, 1)}
           </span>
           <span>
-            <span className="font-semibold">Hauteur :</span>{" "}
+            <span className="font-semibold">Hauteur :</span>{' '}
             {fmt(ord.hauteurOg, 1)}
           </span>
         </div>
       </div>
       {ord.distancePupillaire !== undefined && (
         <div className="text-[12px] mb-2">
-          <span className="font-semibold">Distance pupillaire :</span>{" "}
+          <span className="font-semibold">Distance pupillaire :</span>{' '}
           {ord.distancePupillaire} mm
         </div>
       )}
@@ -197,7 +197,7 @@ export function OrdonnanceCompact({ ord, client }: Props) {
       </div>
       <div className="mb-3 text-[11px]">
         <span className="font-semibold">
-          {client ? `${client.prenom} ${client.nom}` : ""}
+          {client ? `${client.prenom} ${client.nom}` : ''}
         </span>
         {client?.telephone && <span> · {client.telephone}</span>}
         {ord.nomMedecin && <span> · Dr {ord.nomMedecin}</span>}
@@ -206,7 +206,7 @@ export function OrdonnanceCompact({ ord, client }: Props) {
         <thead>
           <tr className="bg-gray-100">
             <th className="border border-black px-1 py-1 w-12"></th>
-            {["Sph", "Cyl", "Axe", "Add"].map((h) => (
+            {['Sph', 'Cyl', 'Axe', 'Add'].map((h) => (
               <th key={h} className="border border-black px-1 py-1">
                 {h}
               </th>
@@ -222,7 +222,7 @@ export function OrdonnanceCompact({ ord, client }: Props) {
             <td className="border border-black px-1 py-1">
               {fmt(ord.odCylindre)}
             </td>
-            <td className="border border-black px-1 py-1">{ord.odAxe ?? ""}</td>
+            <td className="border border-black px-1 py-1">{ord.odAxe ?? ''}</td>
             <td className="border border-black px-1 py-1">
               {fmt(ord.odAddition)}
             </td>
@@ -235,7 +235,7 @@ export function OrdonnanceCompact({ ord, client }: Props) {
             <td className="border border-black px-1 py-1">
               {fmt(ord.ogCylindre)}
             </td>
-            <td className="border border-black px-1 py-1">{ord.ogAxe ?? ""}</td>
+            <td className="border border-black px-1 py-1">{ord.ogAxe ?? ''}</td>
             <td className="border border-black px-1 py-1">
               {fmt(ord.ogAddition)}
             </td>
@@ -264,14 +264,14 @@ export function OrdonnanceDetaille({ ord, client }: Props) {
         <thead>
           <tr className="bg-gray-100">
             <th className="border border-black px-1 py-1 w-12"></th>
-            {["Sph", "Cyl", "Axe", "Add", "Prisme", "Base"].map((h) => (
-              <th key={"od" + h} className="border border-black px-1 py-1">
+            {['Sph', 'Cyl', 'Axe', 'Add', 'Prisme', 'Base'].map((h) => (
+              <th key={'od' + h} className="border border-black px-1 py-1">
                 {h}
               </th>
             ))}
             <th className="border border-black px-1 py-1 w-12"></th>
-            {["Sph", "Cyl", "Axe", "Add", "Prisme", "Base"].map((h) => (
-              <th key={"og" + h} className="border border-black px-1 py-1">
+            {['Sph', 'Cyl', 'Axe', 'Add', 'Prisme', 'Base'].map((h) => (
+              <th key={'og' + h} className="border border-black px-1 py-1">
                 {h}
               </th>
             ))}
@@ -290,7 +290,7 @@ export function OrdonnanceDetaille({ ord, client }: Props) {
             <td className="border border-black px-1 py-1">
               {fmt(ord.odCylindre)}
             </td>
-            <td className="border border-black px-1 py-1">{ord.odAxe ?? ""}</td>
+            <td className="border border-black px-1 py-1">{ord.odAxe ?? ''}</td>
             <td className="border border-black px-1 py-1">
               {fmt(ord.odAddition)}
             </td>
@@ -298,7 +298,7 @@ export function OrdonnanceDetaille({ ord, client }: Props) {
               {fmt(ord.odPrisme)}
             </td>
             <td className="border border-black px-1 py-1">
-              {ord.odBase ?? ""}
+              {ord.odBase ?? ''}
             </td>
             <td className="border border-black px-1 py-1 font-semibold bg-gray-50">
               OG
@@ -311,7 +311,7 @@ export function OrdonnanceDetaille({ ord, client }: Props) {
             <td className="border border-black px-1 py-1">
               {fmt(ord.ogCylindre)}
             </td>
-            <td className="border border-black px-1 py-1">{ord.ogAxe ?? ""}</td>
+            <td className="border border-black px-1 py-1">{ord.ogAxe ?? ''}</td>
             <td className="border border-black px-1 py-1">
               {fmt(ord.ogAddition)}
             </td>
@@ -319,7 +319,7 @@ export function OrdonnanceDetaille({ ord, client }: Props) {
               {fmt(ord.ogPrisme)}
             </td>
             <td className="border border-black px-1 py-1">
-              {ord.ogBase ?? ""}
+              {ord.ogBase ?? ''}
             </td>
           </tr>
           <tr>
@@ -347,13 +347,13 @@ export function OrdonnanceDetaille({ ord, client }: Props) {
       <div className="grid grid-cols-2 gap-6 text-[12px] mb-4">
         <div className="flex gap-4">
           <span>
-            <span className="font-semibold">Écart</span>{" "}
+            <span className="font-semibold">Écart</span>{' '}
             <span className="border border-black px-3 py-0.5 ml-1 inline-block min-w-[40px]">
               {fmt(ord.ecartOd, 1)}
             </span>
           </span>
           <span>
-            <span className="font-semibold">Hauteur</span>{" "}
+            <span className="font-semibold">Hauteur</span>{' '}
             <span className="border border-black px-3 py-0.5 ml-1 inline-block min-w-[40px]">
               {fmt(ord.hauteurOd, 1)}
             </span>
@@ -361,13 +361,13 @@ export function OrdonnanceDetaille({ ord, client }: Props) {
         </div>
         <div className="flex gap-4 justify-end">
           <span>
-            <span className="font-semibold">Écart</span>{" "}
+            <span className="font-semibold">Écart</span>{' '}
             <span className="border border-black px-3 py-0.5 ml-1 inline-block min-w-[40px]">
               {fmt(ord.ecartOg, 1)}
             </span>
           </span>
           <span>
-            <span className="font-semibold">Hauteur</span>{" "}
+            <span className="font-semibold">Hauteur</span>{' '}
             <span className="border border-black px-3 py-0.5 ml-1 inline-block min-w-[40px]">
               {fmt(ord.hauteurOg, 1)}
             </span>

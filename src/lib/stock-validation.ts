@@ -1,4 +1,4 @@
-import type { LigneCommande, Produit } from "./types";
+import type { LigneCommande, Produit } from './types';
 
 export interface StockIssue {
   produitId: string;
@@ -13,13 +13,16 @@ export interface StockIssue {
  * for products where demand exceeds available stock.
  */
 export function checkStock(
-  lignes: Pick<LigneCommande, "produitId" | "quantite">[],
+  lignes: Pick<LigneCommande, 'produitId' | 'quantite'>[],
   produits: Produit[],
 ): StockIssue[] {
   const qtyByProduit = new Map<string, number>();
   for (const l of lignes) {
     if (!l.produitId) continue;
-    qtyByProduit.set(l.produitId, (qtyByProduit.get(l.produitId) ?? 0) + (l.quantite || 0));
+    qtyByProduit.set(
+      l.produitId,
+      (qtyByProduit.get(l.produitId) ?? 0) + (l.quantite || 0),
+    );
   }
   const issues: StockIssue[] = [];
   for (const [pid, demande] of qtyByProduit) {
