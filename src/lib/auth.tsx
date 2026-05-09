@@ -12,6 +12,7 @@ export type AppRole = 'ADMIN' | 'OPTICIEN';
 interface User {
   id: string;
   email: string;
+  storeId: string;
   profile: {
     role: AppRole;
     prenom: string;
