@@ -57,11 +57,13 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
 
   if (requireRole) {
     const allowed =
-      requireRole === 'OPTICIEN'
-        ? isManager
+      requireRole === 'SUPER_ADMIN'
+        ? roles.includes('SUPER_ADMIN')
         : requireRole === 'ADMIN'
           ? isAdmin
-          : hasRole(requireRole);
+          : requireRole === 'MANAGER'
+            ? isManager
+            : hasRole(requireRole);
 
     if (!allowed) {
       return (

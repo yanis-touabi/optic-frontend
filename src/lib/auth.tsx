@@ -7,12 +7,13 @@ import {
 } from 'react';
 import { apiClient } from '../api/apiClient';
 
-export type AppRole = 'ADMIN' | 'OPTICIEN';
+export type AppRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
 
 interface User {
   id: string;
   email: string;
   storeId: string;
+  status: 'PENDING' | 'ACTIVE' | 'REJECTED' | 'SUSPENDED';
   profile: {
     role: AppRole;
     prenom: string;
@@ -27,6 +28,7 @@ interface AuthCtx {
   loading: boolean;
   roles: AppRole[];
   rolesLoading: boolean;
+  isSuperAdmin: boolean;
   isAdmin: boolean;
   isManager: boolean;
   hasRole: (r: AppRole) => boolean;
@@ -39,6 +41,7 @@ const Ctx = createContext<AuthCtx>({
   loading: true,
   roles: [],
   rolesLoading: true,
+  isSuperAdmin: false,
   isAdmin: false,
   isManager: false,
   hasRole: () => false,
@@ -81,9 +84,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const roles = user?.roles ?? (user?.profile?.role ? [user.profile.role] : []);
-  const isAdmin = roles.includes('ADMIN');
-  // Assuming OPTICIEN is like manager in old schema, adjust if needed
-  const isManager = roles.includes('OPTICIEN') || isAdmin;
+  const isSuperAdmin = roles.includes('SUPER_ADMIN');
+  const isAdmin = isSuperAdmin || roles.includes('ADMIN');
+  const isManager = isSuperAdmin || isAdmin || roles.includes('MANAGER');
 
   return (
     <Ctx.Provider
@@ -92,9 +95,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         roles,
         rolesLoading: loading,
+        isSuperAdmin,
         isAdmin,
         isManager,
-        hasRole: (r) => roles.includes(r),
+        hasRole: (r) => isSuperAdmin || roles.includes(r),
         signOut,
         signIn,
       }}

@@ -23,7 +23,7 @@ type NavItem = {
   label: string;
   icon: typeof LayoutDashboard;
   end?: boolean;
-  role?: 'ADMIN' | 'OPTICIEN';
+  role?: 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
 };
 
 const nav: NavItem[] = [
@@ -32,15 +32,15 @@ const nav: NavItem[] = [
     to: '/commandes',
     label: 'Bons de commande',
     icon: ShoppingBag,
-    role: 'OPTICIEN',
+    role: 'MANAGER',
   },
   {
     to: '/commandes/nouveau',
     label: 'Nouveau bon',
     icon: ClipboardList,
-    role: 'OPTICIEN',
+    role: 'MANAGER',
   },
-  { to: '/clients', label: 'Clients', icon: Users, role: 'OPTICIEN' },
+  { to: '/clients', label: 'Clients', icon: Users, role: 'MANAGER' },
   { to: '/produits', label: 'Produits', icon: Glasses, role: 'ADMIN' },
   { to: '/ordonnances', label: 'Ordonnances', icon: FileText },
   { to: '/profil', label: 'Profil', icon: UserCircle },
@@ -55,10 +55,14 @@ const nav: NavItem[] = [
 export default function AppLayout() {
   const loc = useLocation();
   const navigate = useNavigate();
-  const { user, signOut, isAdmin, isManager, roles } = useAuth();
-  const visibleNav = nav.filter(
-    (n) => !n.role || (n.role === 'ADMIN' ? isAdmin : isManager),
-  );
+  const { user, signOut, isSuperAdmin, isAdmin, isManager, roles } = useAuth();
+  const visibleNav = nav.filter((n) => {
+    if (!n.role) return true;
+    if (isSuperAdmin) return true; // SUPER_ADMIN sees everything
+    if (n.role === 'ADMIN') return isAdmin;
+    if (n.role === 'MANAGER') return isManager;
+    return true;
+  });
   const isPrint = loc.pathname.includes('/imprimer');
 
   const handleLogout = async () => {

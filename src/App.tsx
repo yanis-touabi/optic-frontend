@@ -55,7 +55,7 @@ const App = () => (
               <Route
                 path="/clients"
                 element={
-                  <ProtectedRoute requireRole="OPTICIEN">
+                  <ProtectedRoute requireRole="MANAGER">
                     <Clients />
                   </ProtectedRoute>
                 }
@@ -72,7 +72,7 @@ const App = () => (
               <Route
                 path="/commandes"
                 element={
-                  <ProtectedRoute requireRole="OPTICIEN">
+                  <ProtectedRoute requireRole="MANAGER">
                     <Commandes />
                   </ProtectedRoute>
                 }
@@ -80,7 +80,7 @@ const App = () => (
               <Route
                 path="/commandes/nouveau"
                 element={
-                  <ProtectedRoute requireRole="OPTICIEN">
+                  <ProtectedRoute requireRole="MANAGER">
                     <NouveauBon />
                   </ProtectedRoute>
                 }
@@ -88,7 +88,7 @@ const App = () => (
               <Route
                 path="/commandes/:id/modifier"
                 element={
-                  <ProtectedRoute requireRole="OPTICIEN">
+                  <ProtectedRoute requireRole="MANAGER">
                     <EditerBon />
                   </ProtectedRoute>
                 }
@@ -96,7 +96,7 @@ const App = () => (
               <Route
                 path="/commandes/:id/imprimer"
                 element={
-                  <ProtectedRoute requireRole="OPTICIEN">
+                  <ProtectedRoute requireRole="MANAGER">
                     <ImprimerBon />
                   </ProtectedRoute>
                 }
@@ -104,7 +104,7 @@ const App = () => (
               <Route
                 path="/ordonnances/:id/imprimer"
                 element={
-                  <ProtectedRoute requireRole="OPTICIEN">
+                  <ProtectedRoute requireRole="MANAGER">
                     <ImprimerOrdonnance />
                   </ProtectedRoute>
                 }

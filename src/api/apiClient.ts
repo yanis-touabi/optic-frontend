@@ -19,9 +19,18 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('access_token');
-      // Redirect to login or trigger global auth refresh logic
-      window.location.href = '/auth';
+      const requestUrl = error.config?.url ?? '';
+      const isAuthRoute =
+        requestUrl.includes('/auth/login') ||
+        requestUrl.includes('/auth/register') ||
+        requestUrl.includes('/auth/bootstrap');
+      if (!isAuthRoute) {
+        const token = localStorage.getItem('access_token');
+        if (token) {
+          localStorage.removeItem('access_token');
+          window.location.href = '/auth';
+        }
+      }
     }
     return Promise.reject(error);
   },

@@ -33,10 +33,12 @@ export default function Auth() {
   // sign in
   const [siEmail, setSiEmail] = useState('');
   const [siPwd, setSiPwd] = useState('');
+  const [signInError, setSignInError] = useState('');
   // sign up
   const [suName, setSuName] = useState('');
   const [suEmail, setSuEmail] = useState('');
   const [suPwd, setSuPwd] = useState('');
+  const [suStoreId, setSuStoreId] = useState('');
 
   if (loading)
     return (
@@ -52,24 +54,26 @@ export default function Auth() {
       emailSchema.parse(siEmail);
       passwordSchema.parse(siPwd);
     } catch (err) {
-      return toast.error(
-        err instanceof z.ZodError ? err.errors[0].message : 'Champs invalides',
-      );
+      const message =
+        err instanceof z.ZodError ? err.errors[0].message : 'Champs invalides';
+      setSignInError(message);
+      return toast.error(message);
     }
+    setSignInError('');
     setBusy(true);
     try {
       const { data } = await apiClient.post('/auth/login', {
         email: siEmail,
         password: siPwd,
       });
-      console.log('Login response:', data);
       await authSignIn(data.access_token);
       toast.success('Connecté');
       nav('/');
     } catch (error: any) {
-      toast.error(
-        error.response?.data?.message || 'Email ou mot de passe incorrect',
-      );
+      const message =
+        error.response?.data?.message || 'Email ou mot de passe incorrect';
+      setSignInError(message);
+      toast.error(message);
     } finally {
       setBusy(false);
     }
@@ -81,6 +85,7 @@ export default function Auth() {
       nameSchema.parse(suName);
       emailSchema.parse(suEmail);
       strongPasswordSchema.parse(suPwd);
+      z.string().uuid('Store ID invalide').parse(suStoreId);
     } catch (err) {
       return toast.error(
         err instanceof z.ZodError ? err.errors[0].message : 'Champs invalides',
@@ -88,14 +93,20 @@ export default function Auth() {
     }
     setBusy(true);
     try {
-      const { data } = await apiClient.post('/auth/register', {
+      await apiClient.post('/auth/register', {
         email: suEmail,
         password: suPwd,
-        displayName: suName,
+        fullName: suName,
+        storeId: suStoreId,
       });
-      await authSignIn(data.access_token);
-      toast.success('Inscription réussie !');
-      nav('/');
+      toast.success(
+        "Inscription soumise ! Votre compte est en attente d'approbation par un administrateur.",
+      );
+      // Reset form
+      setSuName('');
+      setSuEmail('');
+      setSuPwd('');
+      setSuStoreId('');
     } catch (error: any) {
       toast.error(
         error.response?.data?.message || "Erreur lors de l'inscription",
@@ -183,6 +194,11 @@ export default function Auth() {
                         required
                       />
                     </div>
+                    {signInError && (
+                      <div className="text-sm text-destructive">
+                        {signInError}
+                      </div>
+                    )}
                     <Button type="submit" className="w-full" disabled={busy}>
                       {busy ? 'Connexion...' : 'Se connecter'}
                     </Button>
@@ -214,6 +230,15 @@ export default function Auth() {
                         type="email"
                         value={suEmail}
                         onChange={(e) => setSuEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label>ID du magasin</Label>
+                      <Input
+                        value={suStoreId}
+                        onChange={(e) => setSuStoreId(e.target.value)}
+                        placeholder="Entrez l'ID du magasin"
                         required
                       />
                     </div>
