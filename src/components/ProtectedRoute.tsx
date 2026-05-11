@@ -17,7 +17,7 @@ interface Props {
 }
 
 export default function ProtectedRoute({ children, requireRole }: Props) {
-  const { user, loading, roles, isAdmin, isManager, hasRole } = useAuth();
+  const { user, loading, isSuperAdmin, isAdmin, hasRole } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -58,12 +58,10 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
   if (requireRole) {
     const allowed =
       requireRole === 'SUPER_ADMIN'
-        ? roles.includes('SUPER_ADMIN')
+        ? isSuperAdmin
         : requireRole === 'ADMIN'
           ? isAdmin
-          : requireRole === 'MANAGER'
-            ? isManager
-            : hasRole(requireRole);
+          : hasRole(requireRole);
 
     if (!allowed) {
       return (
@@ -76,8 +74,8 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
               <CardTitle>Accès refusé</CardTitle>
               <CardDescription>
                 Vous n'avez pas les autorisations nécessaires (rôle requis :{' '}
-                <strong>{requireRole}</strong>) pour accéder à cette page. Vos
-                rôles actuels : {roles.length ? roles.join(', ') : 'aucun'}.
+                <strong>{requireRole}</strong>) pour accéder à cette page. Votre
+                rôle actuel : <strong>{user.role}</strong>.
               </CardDescription>
             </CardHeader>
             <CardContent>

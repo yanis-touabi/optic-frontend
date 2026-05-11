@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { PageHeader } from '@/components/PageHeader';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -18,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -35,12 +36,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Loader2, RefreshCw, Edit2 } from 'lucide-react';
+import {
+  Loader2,
+  RefreshCw,
+  Edit2,
+  UserPlus,
+  Search,
+  Filter,
+  CheckCircle,
+  XCircle,
+  Clock,
+} from 'lucide-react';
 import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 
-type Role = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
+type Role = 'ADMIN' | 'EMPLOYEE';
 type UserStatus = 'PENDING' | 'ACTIVE' | 'REJECTED' | 'SUSPENDED';
 
 interface AdminUser {
@@ -49,7 +60,7 @@ interface AdminUser {
   fullName: string;
   createdAt: string;
   status: UserStatus;
-  roles: Role[];
+  role: Role | 'SUPER_ADMIN';
 }
 
 interface PendingUser {
@@ -58,7 +69,6 @@ interface PendingUser {
   fullName: string;
   createdAt: string;
   status: UserStatus;
-  roles: Role[];
 }
 
 interface EditUserForm {
@@ -66,11 +76,16 @@ interface EditUserForm {
 }
 
 export default function AdminUsers() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, isSuperAdmin } = useAuth();
   const [activeUsers, setActiveUsers] = useState<AdminUser[]>([]);
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string>('');
+
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Edit user modal state
   const [openEditModal, setOpenEditModal] = useState(false);
@@ -81,6 +96,13 @@ export default function AdminUsers() {
     },
   });
   const [updatingUser, setUpdatingUser] = useState(false);
+
+  // Confirmation modals
+  const [confirmAction, setConfirmAction] = useState<{
+    type: 'approve' | 'reject' | 'change_role' | 'toggle_status';
+    user: AdminUser | PendingUser;
+    newRole?: Role;
+  } | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -102,31 +124,78 @@ export default function AdminUsers() {
     load();
   }, []);
 
+  // Filter users based on search and filters
+  const filteredActiveUsers = activeUsers.filter((user) => {
+    const matchesSearch =
+      searchQuery === '' ||
+      user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    const matchesStatus =
+      statusFilter === 'all' || user.status === statusFilter;
+
+    return matchesSearch && matchesRole && matchesStatus;
+  });
+
+  const filteredPendingUsers = pendingUsers.filter((user) => {
+    const matchesSearch =
+      searchQuery === '' ||
+      user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesSearch;
+  });
+
   // ─── Approve/Reject Pending Users ──────────────────────────────────────
 
   const openEditFor = (user: AdminUser) => {
     // Prevent editing SUPER_ADMIN or self
-    if (user.roles.includes('SUPER_ADMIN') || user.id === currentUser?.id) {
+    if (user.role === 'SUPER_ADMIN' || user.id === currentUser?.id) {
       toast.error('Vous ne pouvez pas modifier cet utilisateur');
       return;
     }
+
+    // ADMIN cannot edit other ADMINS
+    if (!isSuperAdmin && user.role === 'ADMIN') {
+      toast.error(
+        "Les administrateurs ne peuvent pas modifier d'autres administrateurs",
+      );
+      return;
+    }
+
     setEditingUser(user);
     editForm.reset({
-      role: (user.roles[0] || 'EMPLOYEE') as Role,
+      role: (user.role as Role) || 'EMPLOYEE',
     });
     setOpenEditModal(true);
   };
 
-  const onEditUser = async (data: EditUserForm) => {
+  const confirmEditUser = (data: EditUserForm) => {
     if (!editingUser) return;
+    setConfirmAction({
+      type: 'change_role',
+      user: editingUser,
+      newRole: data.role,
+    });
+  };
+
+  const executeEditUser = async () => {
+    if (!confirmAction || confirmAction.type !== 'change_role') return;
+
+    const { user, newRole } = confirmAction as {
+      user: AdminUser;
+      newRole: Role;
+    };
     setUpdatingUser(true);
     try {
-      await apiClient.patch(`/admin/users/${editingUser.id}/role`, {
-        role: data.role,
+      await apiClient.patch(`/admin/users/${user.id}/role`, {
+        role: newRole,
       });
       toast.success('Rôle mis à jour');
       editForm.reset();
       setOpenEditModal(false);
+      setConfirmAction(null);
       await load();
     } catch (error: any) {
       const message = error.response?.data?.message || 'Erreur de mise à jour';
@@ -138,11 +207,35 @@ export default function AdminUsers() {
 
   // ─── Approve/Reject Pending Users ──────────────────────────────────────
 
-  const onApproveUser = async (user: PendingUser, role: Role) => {
+  const confirmApproveUser = (user: PendingUser, role: Role) => {
+    setConfirmAction({
+      type: 'approve',
+      user,
+      newRole: role,
+    });
+  };
+
+  const confirmRejectUser = (user: PendingUser) => {
+    setConfirmAction({
+      type: 'reject',
+      user,
+    });
+  };
+
+  const executeApproveUser = async () => {
+    if (!confirmAction || confirmAction.type !== 'approve') return;
+
+    const { user, newRole } = confirmAction as {
+      user: PendingUser;
+      newRole: Role;
+    };
     setBusyId(user.id);
     try {
-      await apiClient.patch(`/admin/users/${user.id}/approve`, { role });
+      await apiClient.patch(`/admin/users/${user.id}/approve`, {
+        role: newRole,
+      });
       toast.success('Utilisateur approuvé');
+      setConfirmAction(null);
       await load();
     } catch (error: any) {
       const message = error.response?.data?.message || "Erreur d'approbation";
@@ -152,11 +245,15 @@ export default function AdminUsers() {
     }
   };
 
-  const onRejectUser = async (user: PendingUser) => {
+  const executeRejectUser = async () => {
+    if (!confirmAction || confirmAction.type !== 'reject') return;
+
+    const { user } = confirmAction;
     setBusyId(user.id);
     try {
       await apiClient.patch(`/admin/users/${user.id}/reject`);
       toast.success('Utilisateur rejeté');
+      setConfirmAction(null);
       await load();
     } catch (error: any) {
       const message = error.response?.data?.message || 'Erreur de rejet';
@@ -181,15 +278,60 @@ export default function AdminUsers() {
         }
       />
 
-      {/* Pending Users */}
-      {pendingUsers.length > 0 && (
-        <Card>
-          <CardContent className="p-0">
-            <div className="p-4 border-b">
-              <h3 className="font-semibold">
-                Utilisateurs en attente d'approbation
-              </h3>
+      {/* Search and Filter Bar */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher par nom ou email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
+            <div className="flex gap-2">
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="w-32">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Rôle" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les rôles</SelectItem>
+                  <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="EMPLOYEE">Employé</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
+                  <SelectItem value="ACTIVE">Actif</SelectItem>
+                  <SelectItem value="INACTIVE">Inactif</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Pending Users */}
+      {filteredPendingUsers.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Utilisateurs en attente d'approbation (
+              {filteredPendingUsers.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -200,7 +342,7 @@ export default function AdminUsers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pendingUsers.map((u) => (
+                {filteredPendingUsers.map((u) => (
                   <TableRow key={u.id}>
                     <TableCell className="font-medium">{u.fullName}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">
@@ -214,36 +356,47 @@ export default function AdminUsers() {
                         size="sm"
                         variant="outline"
                         disabled={busyId === u.id}
-                        onClick={() => onApproveUser(u, 'EMPLOYEE')}
+                        onClick={() => confirmApproveUser(u, 'EMPLOYEE')}
                       >
                         {busyId === u.id ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         ) : (
-                          'Approuver (Employé)'
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Approuver (Employé)
+                          </>
                         )}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={busyId === u.id}
-                        onClick={() => onApproveUser(u, 'MANAGER')}
-                      >
-                        {busyId === u.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          'Approuver (Manager)'
-                        )}
-                      </Button>
+                      {isSuperAdmin && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busyId === u.id}
+                          onClick={() => confirmApproveUser(u, 'ADMIN')}
+                        >
+                          {busyId === u.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <>
+                              <UserPlus className="h-4 w-4 mr-1" />
+                              Approuver (Admin)
+                            </>
+                          )}
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="destructive"
                         disabled={busyId === u.id}
-                        onClick={() => onRejectUser(u)}
+                        onClick={() => confirmRejectUser(u)}
                       >
                         {busyId === u.id ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         ) : (
-                          'Rejeter'
+                          <>
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Rejeter
+                          </>
                         )}
                       </Button>
                     </TableCell>
@@ -257,17 +410,20 @@ export default function AdminUsers() {
 
       {/* Active Users */}
       <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5" />
+            Utilisateurs actifs ({filteredActiveUsers.length})
+          </CardTitle>
+        </CardHeader>
         <CardContent className="p-0">
-          <div className="p-4 border-b">
-            <h3 className="font-semibold">Utilisateurs actifs</h3>
-          </div>
           {loading ? (
             <div className="p-12 grid place-items-center text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
-          ) : activeUsers.length === 0 ? (
+          ) : filteredActiveUsers.length === 0 ? (
             <div className="p-12 text-center text-muted-foreground text-sm">
-              Aucun utilisateur actif
+              Aucun utilisateur actif trouvé
             </div>
           ) : (
             <Table>
@@ -275,14 +431,19 @@ export default function AdminUsers() {
                 <TableRow>
                   <TableHead>Nom</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Rôles</TableHead>
+                  <TableHead>Rôle</TableHead>
+                  <TableHead>Statut</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {activeUsers.map((u) => {
+                {filteredActiveUsers.map((u) => {
                   const isSelf = u.id === currentUser?.id;
-                  const isSuperAdmin = u.roles.includes('SUPER_ADMIN');
+                  const isSuperAdminUser = u.role === 'SUPER_ADMIN';
+                  const canEdit =
+                    !isSuperAdminUser &&
+                    !isSelf &&
+                    (isSuperAdmin || u.role === 'EMPLOYEE');
 
                   return (
                     <TableRow key={u.id}>
@@ -298,32 +459,51 @@ export default function AdminUsers() {
                         {u.email}
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {u.roles.map((r) => (
-                            <Badge
-                              key={r}
-                              variant={
-                                r === 'SUPER_ADMIN'
-                                  ? 'destructive'
-                                  : r === 'ADMIN'
-                                    ? 'default'
-                                    : 'secondary'
-                              }
-                            >
-                              {r}
-                            </Badge>
-                          ))}
-                        </div>
+                        <Badge
+                          variant={
+                            u.role === 'SUPER_ADMIN'
+                              ? 'destructive'
+                              : u.role === 'ADMIN'
+                                ? 'default'
+                                : 'secondary'
+                          }
+                        >
+                          {u.role === 'SUPER_ADMIN'
+                            ? 'Super Admin'
+                            : u.role === 'ADMIN'
+                              ? 'Admin'
+                              : 'Employé'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            u.status === 'ACTIVE' ? 'default' : 'secondary'
+                          }
+                          className="flex items-center gap-1 w-fit"
+                        >
+                          {u.status === 'ACTIVE' ? (
+                            <CheckCircle className="h-3 w-3" />
+                          ) : (
+                            <XCircle className="h-3 w-3" />
+                          )}
+                          {u.status === 'ACTIVE' ? 'Actif' : 'Inactif'}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        {!isSuperAdmin && !isSelf && (
+                        {canEdit ? (
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => openEditFor(u)}
                           >
-                            <Edit2 className="h-3.5 w-3.5" />
+                            <Edit2 className="h-3.5 w-3.5 mr-1" />
+                            Modifier
                           </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            Non modifiable
+                          </span>
                         )}
                       </TableCell>
                     </TableRow>
@@ -351,7 +531,7 @@ export default function AdminUsers() {
 
           <Form {...editForm}>
             <form
-              onSubmit={editForm.handleSubmit(onEditUser)}
+              onSubmit={editForm.handleSubmit(confirmEditUser)}
               className="space-y-4"
             >
               <FormField
@@ -369,7 +549,6 @@ export default function AdminUsers() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="EMPLOYEE">Employé</SelectItem>
-                        <SelectItem value="MANAGER">Manager</SelectItem>
                         <SelectItem value="ADMIN">Administrateur</SelectItem>
                       </SelectContent>
                     </Select>
@@ -396,6 +575,82 @@ export default function AdminUsers() {
               </div>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={!!confirmAction}
+        onOpenChange={() => setConfirmAction(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmer l'action</DialogTitle>
+            <DialogDescription>
+              {confirmAction?.type === 'approve' && (
+                <p>
+                  Êtes-vous sûr de vouloir approuver{' '}
+                  <strong>{confirmAction.user.fullName}</strong>
+                  en tant que{' '}
+                  <strong>
+                    {confirmAction.newRole === 'ADMIN'
+                      ? 'Administrateur'
+                      : 'Employé'}
+                  </strong>{' '}
+                  ?
+                </p>
+              )}
+              {confirmAction?.type === 'reject' && (
+                <p>
+                  Êtes-vous sûr de vouloir rejeter la demande de{' '}
+                  <strong>{confirmAction.user.fullName}</strong> ? Cette action
+                  est irréversible.
+                </p>
+              )}
+              {confirmAction?.type === 'change_role' && (
+                <p>
+                  Êtes-vous sûr de vouloir changer le rôle de{' '}
+                  <strong>{confirmAction.user.fullName}</strong>
+                  en{' '}
+                  <strong>
+                    {confirmAction.newRole === 'ADMIN'
+                      ? 'Administrateur'
+                      : 'Employé'}
+                  </strong>{' '}
+                  ?
+                </p>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmAction(null)}
+              disabled={busyId === confirmAction?.user.id || updatingUser}
+            >
+              Annuler
+            </Button>
+            <Button
+              variant={
+                confirmAction?.type === 'reject' ? 'destructive' : 'default'
+              }
+              onClick={() => {
+                if (confirmAction?.type === 'approve') {
+                  executeApproveUser();
+                } else if (confirmAction?.type === 'reject') {
+                  executeRejectUser();
+                } else if (confirmAction?.type === 'change_role') {
+                  executeEditUser();
+                }
+              }}
+              disabled={busyId === confirmAction?.user.id || updatingUser}
+            >
+              {busyId === confirmAction?.user.id || updatingUser ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : null}
+              Confirmer
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

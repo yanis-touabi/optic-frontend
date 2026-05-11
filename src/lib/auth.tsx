@@ -7,30 +7,22 @@ import {
 } from 'react';
 import { apiClient } from '../api/apiClient';
 
-export type AppRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
+export type AppRole = 'SUPER_ADMIN' | 'ADMIN' | 'EMPLOYEE';
 
 interface User {
   id: string;
   email: string;
   storeId: string;
   status: 'PENDING' | 'ACTIVE' | 'REJECTED' | 'SUSPENDED';
-  profile: {
-    role: AppRole;
-    prenom: string;
-    nom: string;
-    displayName: string | null;
-  };
-  roles: AppRole[];
+  role: AppRole;
+  displayName?: string;
 }
 
 interface AuthCtx {
   user: User | null;
   loading: boolean;
-  roles: AppRole[];
-  rolesLoading: boolean;
   isSuperAdmin: boolean;
   isAdmin: boolean;
-  isManager: boolean;
   hasRole: (r: AppRole) => boolean;
   signOut: () => Promise<void>;
   signIn: (token: string) => Promise<void>;
@@ -39,11 +31,8 @@ interface AuthCtx {
 const Ctx = createContext<AuthCtx>({
   user: null,
   loading: true,
-  roles: [],
-  rolesLoading: true,
   isSuperAdmin: false,
   isAdmin: false,
-  isManager: false,
   hasRole: () => false,
   signOut: async () => {},
   signIn: async () => {},
@@ -83,22 +72,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const roles = user?.roles ?? (user?.profile?.role ? [user.profile.role] : []);
-  const isSuperAdmin = roles.includes('SUPER_ADMIN');
-  const isAdmin = isSuperAdmin || roles.includes('ADMIN');
-  const isManager = isSuperAdmin || isAdmin || roles.includes('MANAGER');
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const isAdmin = isSuperAdmin || user?.role === 'ADMIN';
 
   return (
     <Ctx.Provider
       value={{
         user,
         loading,
-        roles,
-        rolesLoading: loading,
         isSuperAdmin,
         isAdmin,
-        isManager,
-        hasRole: (r) => isSuperAdmin || roles.includes(r),
+        hasRole: (r) => user?.role === r,
         signOut,
         signIn,
       }}

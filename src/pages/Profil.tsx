@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 const nameSchema = z.string().trim().min(1, 'Requis').max(100);
 
 export default function Profil() {
-  const { user, roles } = useAuth();
+  const { user } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -27,7 +27,7 @@ export default function Profil() {
 
   useEffect(() => {
     if (user) {
-      setDisplayName(user.profile?.displayName ?? '');
+      setDisplayName(user?.displayName ?? '');
       setLoading(false);
     }
   }, [user]);
@@ -108,26 +108,23 @@ export default function Profil() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Rôles</CardTitle>
+            <CardTitle>Rôle</CardTitle>
             <CardDescription>
               Vos autorisations dans l'application
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {roles.length === 0 ? (
+            {!user?.role ? (
               <p className="text-sm text-muted-foreground">
                 Aucun rôle assigné. Contactez un administrateur.
               </p>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {roles.map((r) => (
-                  <Badge
-                    key={r}
-                    variant={r === 'ADMIN' ? 'default' : 'secondary'}
-                  >
-                    {r}
-                  </Badge>
-                ))}
+                <Badge
+                  variant={user.role === 'ADMIN' ? 'default' : 'secondary'}
+                >
+                  {user.role}
+                </Badge>
               </div>
             )}
           </CardContent>

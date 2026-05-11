@@ -23,7 +23,7 @@ type NavItem = {
   label: string;
   icon: typeof LayoutDashboard;
   end?: boolean;
-  role?: 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
+  role?: 'SUPER_ADMIN' | 'ADMIN' | 'EMPLOYEE';
 };
 
 const nav: NavItem[] = [
@@ -32,15 +32,15 @@ const nav: NavItem[] = [
     to: '/commandes',
     label: 'Bons de commande',
     icon: ShoppingBag,
-    role: 'MANAGER',
+    role: 'ADMIN',
   },
   {
     to: '/commandes/nouveau',
     label: 'Nouveau bon',
     icon: ClipboardList,
-    role: 'MANAGER',
+    role: 'ADMIN',
   },
-  { to: '/clients', label: 'Clients', icon: Users, role: 'MANAGER' },
+  { to: '/clients', label: 'Clients', icon: Users, role: 'ADMIN' },
   { to: '/produits', label: 'Produits', icon: Glasses, role: 'ADMIN' },
   { to: '/ordonnances', label: 'Ordonnances', icon: FileText },
   { to: '/profil', label: 'Profil', icon: UserCircle },
@@ -55,12 +55,11 @@ const nav: NavItem[] = [
 export default function AppLayout() {
   const loc = useLocation();
   const navigate = useNavigate();
-  const { user, signOut, isSuperAdmin, isAdmin, isManager, roles } = useAuth();
+  const { user, signOut, isSuperAdmin, isAdmin } = useAuth();
   const visibleNav = nav.filter((n) => {
     if (!n.role) return true;
     if (isSuperAdmin) return true; // SUPER_ADMIN sees everything
     if (n.role === 'ADMIN') return isAdmin;
-    if (n.role === 'MANAGER') return isManager;
     return true;
   });
   const isPrint = loc.pathname.includes('/imprimer');
@@ -112,9 +111,9 @@ export default function AppLayout() {
             <div className="px-3 py-1 space-y-1">
               <div
                 className="text-sm font-medium text-sidebar-foreground truncate"
-                title={user.profile?.displayName || 'Utilisateur'}
+                title={user.displayName || 'Utilisateur'}
               >
-                {user.profile?.displayName || 'Utilisateur'}
+                {user.displayName || 'Utilisateur'}
               </div>
               <div
                 className="text-xs text-sidebar-foreground/60 truncate"
@@ -122,17 +121,14 @@ export default function AppLayout() {
               >
                 {user.email}
               </div>
-              {roles.length > 0 && (
+              {user.role && (
                 <div className="flex flex-wrap gap-1 pt-1">
-                  {roles.map((r) => (
-                    <Badge
-                      key={r}
-                      variant={r === 'ADMIN' ? 'default' : 'secondary'}
-                      className="text-[10px] px-1.5 py-0"
-                    >
-                      {r}
-                    </Badge>
-                  ))}
+                  <Badge
+                    variant={user.role === 'ADMIN' ? 'default' : 'secondary'}
+                    className="text-[10px] px-1.5 py-0"
+                  >
+                    {user.role}
+                  </Badge>
                 </div>
               )}
             </div>
