@@ -7,7 +7,19 @@ import type {
   LigneCommande,
   Ordonnance,
   Produit,
+  PaginatedResponse,
 } from './types';
+
+const fetchPaginated = async <T>(
+  url: string,
+  params: Record<string, unknown>,
+) => {
+  const { data } = await apiClient.get<PaginatedResponse<T>>(url, { params });
+  return data;
+};
+
+export const DEFAULT_PAGE_SIZE = 10;
+export const FETCH_ALL_SIZE = 10000; // Used to fetch all records for client-side search
 
 // ==================== CLIENTS ====================
 
@@ -17,9 +29,25 @@ export const useClients = () =>
   useQuery({
     queryKey: CLIENTS_KEY,
     queryFn: async () => {
-      const { data } = await apiClient.get<Client[]>('/clients');
-      return data;
+      const { data } = await apiClient.get<PaginatedResponse<Client>>(
+        '/clients',
+        {
+          params: { size: FETCH_ALL_SIZE }, // Large size for dashboard
+        },
+      );
+      return data.content;
     },
+  });
+
+export const usePaginatedClients = (params: {
+  page: number;
+  size: number;
+  q?: string;
+  sort?: string;
+}) =>
+  useQuery({
+    queryKey: ['clients', params],
+    queryFn: async () => fetchPaginated<Client>('/clients', params),
   });
 
 export const useCreateClient = () => {
@@ -72,9 +100,25 @@ export const useProduits = () =>
   useQuery({
     queryKey: PRODUITS_KEY,
     queryFn: async () => {
-      const { data } = await apiClient.get<Produit[]>('/products');
-      return data;
+      const { data } = await apiClient.get<PaginatedResponse<Produit>>(
+        '/products',
+        {
+          params: { size: FETCH_ALL_SIZE }, // Large size for dashboard
+        },
+      );
+      return data.content;
     },
+  });
+
+export const usePaginatedProduits = (params: {
+  page: number;
+  size: number;
+  q?: string;
+  sort?: string;
+}) =>
+  useQuery({
+    queryKey: ['produits', params],
+    queryFn: async () => fetchPaginated<Produit>('/products', params),
   });
 
 export const useCreateProduit = () => {
@@ -123,9 +167,25 @@ export const useOrdonnances = () =>
   useQuery({
     queryKey: ORDONNANCES_KEY,
     queryFn: async () => {
-      const { data } = await apiClient.get<Ordonnance[]>('/prescriptions');
-      return data;
+      const { data } = await apiClient.get<PaginatedResponse<Ordonnance>>(
+        '/prescriptions',
+        {
+          params: { size: FETCH_ALL_SIZE }, // Large size for dashboard
+        },
+      );
+      return data.content;
     },
+  });
+
+export const usePaginatedOrdonnances = (params: {
+  page: number;
+  size: number;
+  q?: string;
+  sort?: string;
+}) =>
+  useQuery({
+    queryKey: ['ordonnances', params],
+    queryFn: async () => fetchPaginated<Ordonnance>('/prescriptions', params),
   });
 
 export const useCreateOrdonnance = () => {
@@ -180,9 +240,54 @@ export const useCommandes = () =>
   useQuery({
     queryKey: COMMANDES_KEY,
     queryFn: async () => {
-      const { data } = await apiClient.get<Commande[]>('/orders');
-      return data;
+      const { data } = await apiClient.get<PaginatedResponse<Commande>>(
+        '/orders',
+        {
+          params: { size: FETCH_ALL_SIZE }, // Large size for dashboard
+        },
+      );
+      return data.content;
     },
+  });
+
+export const usePaginatedCommandes = (params: {
+  page: number;
+  size: number;
+  q?: string;
+  statut?: string;
+  clientId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  sort?: string;
+}) =>
+  useQuery({
+    queryKey: ['commandes', params],
+    queryFn: async () => fetchPaginated<Commande>('/orders', params),
+  });
+
+export const usePaginatedAdminUsers = (params: {
+  page: number;
+  size: number;
+  q?: string;
+  role?: string;
+  status?: string;
+  sort?: string;
+}) =>
+  useQuery<PaginatedResponse<unknown>>({
+    queryKey: ['adminUsers', params],
+    queryFn: async () => fetchPaginated<unknown>('/admin/users', params),
+  });
+
+export const usePaginatedPendingAdminUsers = (params: {
+  page: number;
+  size: number;
+  q?: string;
+  sort?: string;
+}) =>
+  useQuery<PaginatedResponse<unknown>>({
+    queryKey: ['adminPendingUsers', params],
+    queryFn: async () =>
+      fetchPaginated<unknown>('/admin/pending-users', params),
   });
 
 export const useCommande = (id: string | undefined) =>

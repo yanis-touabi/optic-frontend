@@ -60,6 +60,7 @@ export interface Ordonnance {
   distancePupillaire?: number;
   notes: string;
   createdAt: string;
+  client?: Partial<Client>;
 }
 
 export interface LigneCommande {
@@ -68,6 +69,15 @@ export interface LigneCommande {
   designation: string;
   quantite: number;
   prixUnitaire: number;
+}
+
+export interface PaginatedResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
 }
 
 export interface Commande {
@@ -84,4 +94,5 @@ export interface Commande {
   notes: string;
   createdAt: string;
   dateLivraisonPrevue?: string;
+  client?: Partial<Client>;
 }

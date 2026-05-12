@@ -20,14 +20,30 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { Plus, Pencil, Trash2, Search, Loader2 } from 'lucide-react';
 import type { Client } from '@/lib/types';
 import {
-  useClients,
+  usePaginatedClients,
   useCreateClient,
   useUpdateClient,
   useDeleteClient,
+  DEFAULT_PAGE_SIZE,
 } from '@/lib/data';
+import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from 'sonner';
 
 const empty: Omit<Client, 'id' | 'createdAt'> = {
@@ -41,21 +57,28 @@ const empty: Omit<Client, 'id' | 'createdAt'> = {
 };
 
 export default function Clients() {
-  const { data: clients = [], isLoading } = useClients();
+  const [q, setQ] = useState('');
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const debouncedSearch = useDebounce(q, 300);
+
+  const { data, isLoading } = usePaginatedClients({
+    page,
+    size: pageSize,
+    q: debouncedSearch,
+  });
+
   const createMut = useCreateClient();
   const updateMut = useUpdateClient();
   const deleteMut = useDeleteClient();
 
-  const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
   const [form, setForm] = useState(empty);
 
-  const filtered = clients.filter((c) =>
-    `${c.nom} ${c.prenom} ${c.telephone} ${c.email}`
-      .toLowerCase()
-      .includes(q.toLowerCase()),
-  );
+  const clients = data?.content ?? [];
+  const totalPages = data?.totalPages ?? 1;
+  const totalElements = data?.totalElements ?? 0;
 
   const openNew = () => {
     setEditing(null);
@@ -135,14 +158,40 @@ export default function Clients() {
         }
       />
       <div className="p-8 space-y-4">
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Rechercher..."
-            className="pl-9"
-          />
+        <div className="flex items-center justify-between">
+          <div className="relative max-w-sm w-full">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setPage(0);
+              }}
+              placeholder="Rechercher..."
+              className="pl-9"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Afficher</span>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={(v) => {
+                setPageSize(Number(v));
+                setPage(0);
+              }}
+            >
+              <SelectTrigger className="w-[80px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[10, 20, 50, 100].map((size) => (
+                  <SelectItem key={size} value={size.toString()}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <Card className="shadow-[var(--shadow-card)]">
           <CardContent className="p-0">
@@ -163,7 +212,7 @@ export default function Clients() {
                       <Loader2 className="h-5 w-5 animate-spin inline" />
                     </TableCell>
                   </TableRow>
-                ) : filtered.length === 0 ? (
+                ) : clients.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={5}
@@ -173,7 +222,7 @@ export default function Clients() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((c) => (
+                  clients.map((c) => (
                     <TableRow key={c.id}>
                       <TableCell className="font-medium">
                         {c.prenom} {c.nom}
@@ -184,20 +233,22 @@ export default function Clients() {
                         {c.adresse || '—'}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => openEdit(c)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => remove(c.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => openEdit(c)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => remove(c.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -206,6 +257,40 @@ export default function Clients() {
             </Table>
           </CardContent>
         </Card>
+
+        {totalPages > 1 && (
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  className={
+                    page === 0
+                      ? 'pointer-events-none opacity-50'
+                      : 'cursor-pointer'
+                  }
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <span className="text-sm text-muted-foreground px-4">
+                  Page {page + 1} sur {totalPages}
+                </span>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    setPage((p) => Math.min(totalPages - 1, p + 1))
+                  }
+                  className={
+                    page === totalPages - 1
+                      ? 'pointer-events-none opacity-50'
+                      : 'cursor-pointer'
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        )}
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>

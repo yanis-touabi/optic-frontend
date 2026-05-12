@@ -27,20 +27,29 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Pencil, Trash2, Printer, Loader2 } from 'lucide-react';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import { Plus, Pencil, Trash2, Printer, Loader2, Search } from 'lucide-react';
 import { formatDate } from '@/lib/format';
 import {
-  useClients,
-  useOrdonnances,
+  usePaginatedClients,
+  usePaginatedOrdonnances,
   useCreateOrdonnance,
   useUpdateOrdonnance,
   useDeleteOrdonnance,
+  DEFAULT_PAGE_SIZE,
 } from '@/lib/data';
+import { useDebounce } from '@/hooks/use-debounce';
 import type { Ordonnance } from '@/lib/types';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
-type Form = Omit<Ordonnance, 'id' | 'createdAt'>;
+type Form = Omit<Ordonnance, 'id' | 'createdAt' | 'client'>;
 
 const empty: Form = {
   clientId: '',
@@ -51,11 +60,31 @@ const empty: Form = {
 const numOrU = (v: string) => (v === '' ? undefined : Number(v));
 
 export default function Ordonnances() {
-  const { data: clients = [] } = useClients();
-  const { data: ordonnances = [], isLoading } = useOrdonnances();
+  const [q, setQ] = useState('');
+  const [page, setPage] = useState(0); // ✅ was 1
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const debouncedSearch = useDebounce(q, 300);
+
+  const { data, isLoading } = usePaginatedOrdonnances({
+    page,
+    size: pageSize,
+    q: debouncedSearch,
+  });
+
+  const { data: clientsData } = usePaginatedClients({
+    page: 0,
+    size: 100,
+    q: '',
+  });
+
+  const clients = clientsData?.content ?? [];
+
   const createMut = useCreateOrdonnance();
   const updateMut = useUpdateOrdonnance();
   const deleteMut = useDeleteOrdonnance();
+
+  const ordonnances = data?.content ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
@@ -69,85 +98,64 @@ export default function Ordonnances() {
   };
   const openEdit = (o: Ordonnance) => {
     setEditing(o);
-
     setForm({
       clientId: o.clientId ?? '',
-
       datePrescription: o.datePrescription ?? '',
       dateExpiration: o.dateExpiration ?? '',
-
       nomMedecin: o.nomMedecin ?? '',
       notes: o.notes ?? '',
-
       odSphere: o.odSphere,
       odCylindre: o.odCylindre,
       odAxe: o.odAxe,
       odAddition: o.odAddition,
       odPrisme: o.odPrisme,
       odBase: o.odBase,
-
       ogSphere: o.ogSphere,
       ogCylindre: o.ogCylindre,
       ogAxe: o.ogAxe,
       ogAddition: o.ogAddition,
       ogPrisme: o.ogPrisme,
       ogBase: o.ogBase,
-
       ecartOd: o.ecartOd,
       ecartOg: o.ecartOg,
-
       hauteurOd: o.hauteurOd,
       hauteurOg: o.hauteurOg,
-
       distancePupillaire: o.distancePupillaire,
     });
-
     setOpen(true);
   };
 
   const save = async () => {
     if (!form.clientId) return toast.error('Sélectionnez un client');
-    console.log('Saving ordonnance', form);
     try {
       if (editing) {
-        const payload = {
-          clientId: form.clientId,
-
-          datePrescription: form.datePrescription,
-          dateExpiration: form.dateExpiration,
-
-          nomMedecin: form.nomMedecin,
-          notes: form.notes,
-
-          odSphere: form.odSphere,
-          odCylindre: form.odCylindre,
-          odAxe: form.odAxe,
-          odAddition: form.odAddition,
-          odPrisme: form.odPrisme,
-          odBase: form.odBase,
-
-          ogSphere: form.ogSphere,
-          ogCylindre: form.ogCylindre,
-          ogAxe: form.ogAxe,
-          ogAddition: form.ogAddition,
-          ogPrisme: form.ogPrisme,
-          ogBase: form.ogBase,
-
-          ecartOd: form.ecartOd,
-          ecartOg: form.ecartOg,
-
-          hauteurOd: form.hauteurOd,
-          hauteurOg: form.hauteurOg,
-
-          distancePupillaire: form.distancePupillaire,
-        };
-
-        if (editing) {
-          await updateMut.mutateAsync({
-            id: editing.id,
-            patch: payload,
-          });
-        }
+        await updateMut.mutateAsync({
+          id: editing.id,
+          patch: {
+            clientId: form.clientId,
+            datePrescription: form.datePrescription,
+            dateExpiration: form.dateExpiration,
+            nomMedecin: form.nomMedecin,
+            notes: form.notes,
+            odSphere: form.odSphere,
+            odCylindre: form.odCylindre,
+            odAxe: form.odAxe,
+            odAddition: form.odAddition,
+            odPrisme: form.odPrisme,
+            odBase: form.odBase,
+            ogSphere: form.ogSphere,
+            ogCylindre: form.ogCylindre,
+            ogAxe: form.ogAxe,
+            ogAddition: form.ogAddition,
+            ogPrisme: form.ogPrisme,
+            ogBase: form.ogBase,
+            ecartOd: form.ecartOd,
+            ecartOg: form.ecartOg,
+            hauteurOd: form.hauteurOd,
+            hauteurOg: form.hauteurOg,
+            distancePupillaire: form.distancePupillaire,
+          },
+        });
         toast.success('Ordonnance mise à jour');
       } else {
         await createMut.mutateAsync(form);
@@ -186,6 +194,41 @@ export default function Ordonnances() {
         }
       />
       <div className="p-8 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="relative max-w-sm w-full">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setPage(0); // ✅ was setPage(1)
+              }}
+              placeholder="Rechercher (client, médecin)..."
+              className="pl-9"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Afficher</span>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={(v) => {
+                setPageSize(Number(v));
+                setPage(0); // ✅ was setPage(1)
+              }}
+            >
+              <SelectTrigger className="w-[80px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[10, 20, 50, 100].map((size) => (
+                  <SelectItem key={size} value={size.toString()}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         <Card className="shadow-[var(--shadow-card)]">
           <CardContent className="p-0">
             <Table>
@@ -217,6 +260,7 @@ export default function Ordonnances() {
                   </TableRow>
                 ) : (
                   ordonnances.map((o) => {
+                    // ✅ was paginated.map(...)
                     const cl = clients.find((c) => c.id === o.clientId);
                     return (
                       <TableRow key={o.id}>
@@ -234,27 +278,31 @@ export default function Ordonnances() {
                           {o.ogAxe ?? '—'}°
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => nav(`/ordonnances/${o.id}/imprimer`)}
-                          >
-                            <Printer className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => openEdit(o)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => remove(o.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() =>
+                                nav(`/ordonnances/${o.id}/imprimer`)
+                              }
+                            >
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => openEdit(o)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => remove(o.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -264,6 +312,40 @@ export default function Ordonnances() {
             </Table>
           </CardContent>
         </Card>
+
+        {totalPages > 1 && (
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setPage((p) => Math.max(0, p - 1))} // ✅ was Math.max(1, ...)
+                  className={
+                    page === 0 // ✅ was page === 1
+                      ? 'pointer-events-none opacity-50'
+                      : 'cursor-pointer'
+                  }
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <span className="text-sm text-muted-foreground px-4">
+                  Page {page + 1} sur {totalPages} {/* ✅ was {page} */}
+                </span>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    setPage((p) => Math.min(totalPages - 1, p + 1))
+                  } // ✅ was totalPages
+                  className={
+                    page === totalPages - 1 // ✅ was page === totalPages
+                      ? 'pointer-events-none opacity-50'
+                      : 'cursor-pointer'
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        )}
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>

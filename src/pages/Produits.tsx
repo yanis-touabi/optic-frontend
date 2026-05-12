@@ -27,15 +27,24 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, Search, Loader2 } from 'lucide-react';
 import { formatDZD } from '@/lib/format';
 import {
-  useProduits,
+  usePaginatedProduits,
   useCreateProduit,
   useUpdateProduit,
   useDeleteProduit,
+  DEFAULT_PAGE_SIZE,
 } from '@/lib/data';
+import { useDebounce } from '@/hooks/use-debounce';
 import type { Produit, ProduitCategorie } from '@/lib/types';
 import { toast } from 'sonner';
 
@@ -56,19 +65,27 @@ const catLabel: Record<ProduitCategorie, string> = {
 };
 
 export default function Produits() {
-  const { data: produits = [], isLoading } = useProduits();
+  const [q, setQ] = useState('');
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const debouncedSearch = useDebounce(q, 300);
+
+  const { data, isLoading } = usePaginatedProduits({
+    page,
+    size: pageSize,
+    q: debouncedSearch,
+  });
+
   const createMut = useCreateProduit();
   const updateMut = useUpdateProduit();
   const deleteMut = useDeleteProduit();
 
-  const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Produit | null>(null);
   const [form, setForm] = useState(empty);
 
-  const filtered = produits.filter((p) =>
-    `${p.nom} ${p.marque} ${p.modele}`.toLowerCase().includes(q.toLowerCase()),
-  );
+  const produits = data?.content ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
   const openNew = () => {
     setEditing(null);
@@ -145,14 +162,40 @@ export default function Produits() {
         }
       />
       <div className="p-8 space-y-4">
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Rechercher..."
-            className="pl-9"
-          />
+        <div className="flex items-center justify-between">
+          <div className="relative max-w-sm w-full">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setPage(0);
+              }}
+              placeholder="Rechercher..."
+              className="pl-9"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Afficher</span>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={(v) => {
+                setPageSize(Number(v));
+                setPage(0);
+              }}
+            >
+              <SelectTrigger className="w-[80px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[10, 20, 50, 100].map((size) => (
+                  <SelectItem key={size} value={size.toString()}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <Card className="shadow-[var(--shadow-card)]">
           <CardContent className="p-0">
@@ -174,7 +217,7 @@ export default function Produits() {
                       <Loader2 className="h-5 w-5 animate-spin inline" />
                     </TableCell>
                   </TableRow>
-                ) : filtered.length === 0 ? (
+                ) : produits.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={6}
@@ -184,7 +227,7 @@ export default function Produits() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((p) => (
+                  produits.map((p) => (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">{p.nom}</TableCell>
                       <TableCell>
@@ -200,20 +243,22 @@ export default function Produits() {
                       </TableCell>
                       <TableCell className="text-right">{p.stock}</TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => openEdit(p)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => remove(p.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => openEdit(p)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => remove(p.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -222,6 +267,40 @@ export default function Produits() {
             </Table>
           </CardContent>
         </Card>
+
+        {totalPages > 1 && (
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  className={
+                    page === 0
+                      ? 'pointer-events-none opacity-50'
+                      : 'cursor-pointer'
+                  }
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <span className="text-sm text-muted-foreground px-4">
+                  Page {page + 1} sur {totalPages}
+                </span>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    setPage((p) => Math.min(totalPages - 1, p + 1))
+                  }
+                  className={
+                    page === totalPages - 1
+                      ? 'pointer-events-none opacity-50'
+                      : 'cursor-pointer'
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        )}
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>

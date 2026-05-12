@@ -50,6 +50,12 @@ import {
 import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
+import {
+  usePaginatedAdminUsers,
+  usePaginatedPendingAdminUsers,
+} from '@/lib/data';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { PaginationControls } from '@/components/PaginationControls';
 
 type Role = 'ADMIN' | 'EMPLOYEE';
 type UserStatus = 'PENDING' | 'ACTIVE' | 'REJECTED' | 'SUSPENDED';
@@ -75,17 +81,55 @@ interface EditUserForm {
   role: Role;
 }
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error) return error.message;
+
+  if (typeof error === 'object' && error !== null) {
+    const err = error as { response?: { data?: { message?: unknown } } };
+    if (typeof err.response?.data?.message === 'string') {
+      return err.response.data.message;
+    }
+  }
+
+  return fallback;
+};
+
 export default function AdminUsers() {
   const { user: currentUser, isSuperAdmin } = useAuth();
-  const [activeUsers, setActiveUsers] = useState<AdminUser[]>([]);
-  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
-  const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string>('');
+
+  const [activePage, setActivePage] = useState(0);
+  const [activeSize, setActiveSize] = useState(10);
+  const [pendingPage, setPendingPage] = useState(0);
+  const [pendingSize, setPendingSize] = useState(10);
 
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
+
+  const activeUsersQuery = usePaginatedAdminUsers({
+    page: activePage,
+    size: activeSize,
+    q: debouncedSearchQuery || undefined,
+    role: roleFilter === 'all' ? undefined : roleFilter,
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    sort: 'createdAt',
+  });
+
+  const pendingUsersQuery = usePaginatedPendingAdminUsers({
+    page: pendingPage,
+    size: pendingSize,
+    q: debouncedSearchQuery || undefined,
+    sort: 'createdAt',
+  });
+
+  useEffect(() => {
+    setActivePage(0);
+    setPendingPage(0);
+  }, [debouncedSearchQuery, roleFilter, statusFilter]);
 
   // Edit user modal state
   const [openEditModal, setOpenEditModal] = useState(false);
@@ -104,48 +148,20 @@ export default function AdminUsers() {
     newRole?: Role;
   } | null>(null);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const [activeRes, pendingRes] = await Promise.all([
-        apiClient.get('/admin/users'),
-        apiClient.get('/admin/pending-users'),
-      ]);
-      setActiveUsers(activeRes.data);
-      setPendingUsers(pendingRes.data);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erreur de chargement');
-    } finally {
-      setLoading(false);
-    }
+  const refreshUsers = async () => {
+    await Promise.all([
+      activeUsersQuery.refetch(),
+      pendingUsersQuery.refetch(),
+    ]);
   };
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  // Filter users based on search and filters
-  const filteredActiveUsers = activeUsers.filter((user) => {
-    const matchesSearch =
-      searchQuery === '' ||
-      user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    const matchesStatus =
-      statusFilter === 'all' || user.status === statusFilter;
-
-    return matchesSearch && matchesRole && matchesStatus;
-  });
-
-  const filteredPendingUsers = pendingUsers.filter((user) => {
-    const matchesSearch =
-      searchQuery === '' ||
-      user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
-
-    return matchesSearch;
-  });
+  const activeUsers = (activeUsersQuery.data?.content ?? []) as AdminUser[];
+  const pendingUsers = (pendingUsersQuery.data?.content ?? []) as PendingUser[];
+  const isLoading = activeUsersQuery.isLoading || pendingUsersQuery.isLoading;
+  const isFetching =
+    activeUsersQuery.isFetching || pendingUsersQuery.isFetching;
+  const activeTotal = (activeUsersQuery.data?.totalElements ?? 0) as number;
+  const pendingTotal = (pendingUsersQuery.data?.totalElements ?? 0) as number;
 
   // ─── Approve/Reject Pending Users ──────────────────────────────────────
 
@@ -196,9 +212,9 @@ export default function AdminUsers() {
       editForm.reset();
       setOpenEditModal(false);
       setConfirmAction(null);
-      await load();
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Erreur de mise à jour';
+      await refreshUsers();
+    } catch (error: unknown) {
+      const message = getErrorMessage(error, 'Erreur de mise à jour');
       toast.error(message);
     } finally {
       setUpdatingUser(false);
@@ -236,9 +252,9 @@ export default function AdminUsers() {
       });
       toast.success('Utilisateur approuvé');
       setConfirmAction(null);
-      await load();
-    } catch (error: any) {
-      const message = error.response?.data?.message || "Erreur d'approbation";
+      await refreshUsers();
+    } catch (error: unknown) {
+      const message = getErrorMessage(error, "Erreur d'approbation");
       toast.error(message);
     } finally {
       setBusyId('');
@@ -254,9 +270,9 @@ export default function AdminUsers() {
       await apiClient.patch(`/admin/users/${user.id}/reject`);
       toast.success('Utilisateur rejeté');
       setConfirmAction(null);
-      await load();
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Erreur de rejet';
+      await refreshUsers();
+    } catch (error: unknown) {
+      const message = getErrorMessage(error, 'Erreur de rejet');
       toast.error(message);
     } finally {
       setBusyId('');
@@ -285,9 +301,9 @@ export default function AdminUsers() {
           : 'Utilisateur activé',
       );
       setConfirmAction(null);
-      await load();
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Erreur de modification';
+      await refreshUsers();
+    } catch (error: unknown) {
+      const message = getErrorMessage(error, 'Erreur de modification');
       toast.error(message);
     } finally {
       setBusyId('');
@@ -300,8 +316,15 @@ export default function AdminUsers() {
         title="Gestion des utilisateurs"
         description="Approuvez les nouvelles inscriptions et gérez les rôles des utilisateurs"
         actions={
-          <Button size="sm" variant="outline" onClick={load} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />{' '}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={refreshUsers}
+            disabled={isFetching}
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`}
+            />{' '}
             Actualiser
           </Button>
         }
@@ -342,7 +365,7 @@ export default function AdminUsers() {
                 <SelectContent>
                   <SelectItem value="all">Tous les statuts</SelectItem>
                   <SelectItem value="ACTIVE">Actif</SelectItem>
-                  <SelectItem value="INACTIVE">Inactif</SelectItem>
+                  <SelectItem value="SUSPENDED">Inactif</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -351,215 +374,254 @@ export default function AdminUsers() {
       </Card>
 
       {/* Pending Users */}
-      {filteredPendingUsers.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Utilisateurs en attente d'approbation (
-              {filteredPendingUsers.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Date d'inscription</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPendingUsers.map((u) => (
-                  <TableRow key={u.id}>
-                    <TableCell className="font-medium">{u.fullName}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {u.email}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {new Date(u.createdAt).toLocaleDateString('fr-FR')}
-                    </TableCell>
-                    <TableCell className="text-right space-x-2 flex justify-end">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={busyId === u.id}
-                        onClick={() => confirmApproveUser(u, 'EMPLOYEE')}
-                      >
-                        {busyId === u.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <>
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Approuver (Employé)
-                          </>
-                        )}
-                      </Button>
-                      {isSuperAdmin && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={busyId === u.id}
-                          onClick={() => confirmApproveUser(u, 'ADMIN')}
-                        >
-                          {busyId === u.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <>
-                              <UserPlus className="h-4 w-4 mr-1" />
-                              Approuver (Admin)
-                            </>
-                          )}
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        disabled={busyId === u.id}
-                        onClick={() => confirmRejectUser(u)}
-                      >
-                        {busyId === u.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <>
-                            <XCircle className="h-4 w-4 mr-1" />
-                            Rejeter
-                          </>
-                        )}
-                      </Button>
-                    </TableCell>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Utilisateurs en attente d'approbation ({pendingTotal})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="p-12 grid place-items-center text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : pendingUsers.length === 0 ? (
+            <div className="p-12 text-center text-muted-foreground text-sm">
+              Aucun utilisateur en attente d'approbation
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nom</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Date d'inscription</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+                </TableHeader>
+                <TableBody>
+                  {pendingUsers.map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell className="font-medium">
+                        {u.fullName}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {u.email}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {new Date(u.createdAt).toLocaleDateString('fr-FR')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex flex-nowrap justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={busyId === u.id}
+                            onClick={() => confirmApproveUser(u, 'EMPLOYEE')}
+                          >
+                            {busyId === u.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <>
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Approuver (Employé)
+                              </>
+                            )}
+                          </Button>
+                          {isSuperAdmin && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={busyId === u.id}
+                              onClick={() => confirmApproveUser(u, 'ADMIN')}
+                            >
+                              {busyId === u.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <>
+                                  <UserPlus className="h-4 w-4 mr-1" />
+                                  Approuver (Admin)
+                                </>
+                              )}
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={busyId === u.id}
+                            onClick={() => confirmRejectUser(u)}
+                          >
+                            {busyId === u.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <>
+                                <XCircle className="h-4 w-4 mr-1" />
+                                Rejeter
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <PaginationControls
+                page={pendingPage}
+                size={pendingSize}
+                totalPages={pendingUsersQuery.data?.totalPages ?? 1}
+                totalElements={pendingTotal}
+                disabled={pendingUsersQuery.isFetching}
+                onPageChange={(page) => setPendingPage(page)}
+                onSizeChange={(size) => {
+                  setPendingSize(size);
+                  setPendingPage(0);
+                }}
+              />
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Active Users */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5" />
-            Utilisateurs actifs ({filteredActiveUsers.length})
+            Utilisateurs actifs ({activeTotal})
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {loading ? (
+          {isLoading ? (
             <div className="p-12 grid place-items-center text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
-          ) : filteredActiveUsers.length === 0 ? (
+          ) : activeUsers.length === 0 ? (
             <div className="p-12 text-center text-muted-foreground text-sm">
               Aucun utilisateur actif trouvé
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rôle</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredActiveUsers.map((u) => {
-                  const isSelf = u.id === currentUser?.id;
-                  const isSuperAdminUser = u.role === 'SUPER_ADMIN';
-                  const canEdit =
-                    !isSuperAdminUser &&
-                    !isSelf &&
-                    (isSuperAdmin || u.role === 'EMPLOYEE');
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nom</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Rôle</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {activeUsers.map((u) => {
+                    const isSelf = u.id === currentUser?.id;
+                    const isSuperAdminUser = u.role === 'SUPER_ADMIN';
+                    const canEdit =
+                      !isSuperAdminUser &&
+                      !isSelf &&
+                      (isSuperAdmin || u.role === 'EMPLOYEE');
 
-                  return (
-                    <TableRow key={u.id}>
-                      <TableCell className="font-medium">
-                        {u.fullName}
-                        {isSelf && (
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            (vous)
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {u.email}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            u.role === 'SUPER_ADMIN'
-                              ? 'destructive'
-                              : u.role === 'ADMIN'
-                                ? 'default'
-                                : 'secondary'
-                          }
-                        >
-                          {u.role === 'SUPER_ADMIN'
-                            ? 'Super Admin'
-                            : u.role === 'ADMIN'
-                              ? 'Admin'
-                              : 'Employé'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            u.status === 'ACTIVE' ? 'default' : 'secondary'
-                          }
-                          className="flex items-center gap-1 w-fit"
-                        >
-                          {u.status === 'ACTIVE' ? (
-                            <CheckCircle className="h-3 w-3" />
-                          ) : (
-                            <XCircle className="h-3 w-3" />
-                          )}
-                          {u.status === 'ACTIVE' ? 'Actif' : 'Inactif'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openEditFor(u)}
-                            >
-                              <Edit2 className="h-3.5 w-3.5 mr-1" />
-                              Modifier
-                            </Button>
-                          )}
-                          {isSuperAdmin && u.status !== 'ACTIVE' && (
-                            <Button
-                              size="sm"
-                              variant="default"
-                              disabled={busyId === u.id}
-                              onClick={() => confirmToggleStatus(u)}
-                            >
-                              {busyId === u.id ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <>
-                                  <CheckCircle className="h-3.5 w-3.5 mr-1" />
-                                  Activer
-                                </>
-                              )}
-                            </Button>
-                          )}
-                          {!canEdit && !isSuperAdmin && (
-                            <span className="text-xs text-muted-foreground">
-                              Non modifiable
+                    return (
+                      <TableRow key={u.id}>
+                        <TableCell className="font-medium">
+                          {u.fullName}
+                          {isSelf && (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              (vous)
                             </span>
                           )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {u.email}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              u.role === 'SUPER_ADMIN'
+                                ? 'destructive'
+                                : u.role === 'ADMIN'
+                                  ? 'default'
+                                  : 'secondary'
+                            }
+                          >
+                            {u.role === 'SUPER_ADMIN'
+                              ? 'Super Admin'
+                              : u.role === 'ADMIN'
+                                ? 'Admin'
+                                : 'Employé'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              u.status === 'ACTIVE' ? 'default' : 'secondary'
+                            }
+                            className="flex items-center gap-1 w-fit"
+                          >
+                            {u.status === 'ACTIVE' ? (
+                              <CheckCircle className="h-3 w-3" />
+                            ) : (
+                              <XCircle className="h-3 w-3" />
+                            )}
+                            {u.status === 'ACTIVE' ? 'Actif' : 'Inactif'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex flex-nowrap justify-end gap-2">
+                            {canEdit && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openEditFor(u)}
+                              >
+                                <Edit2 className="h-3.5 w-3.5 mr-1" />
+                                Modifier
+                              </Button>
+                            )}
+                            {isSuperAdmin && u.status !== 'ACTIVE' && (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                disabled={busyId === u.id}
+                                onClick={() => confirmToggleStatus(u)}
+                              >
+                                {busyId === u.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <>
+                                    <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                                    Activer
+                                  </>
+                                )}
+                              </Button>
+                            )}
+                            {!canEdit && !isSuperAdmin && (
+                              <span className="text-xs text-muted-foreground">
+                                Non modifiable
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+              <PaginationControls
+                page={activePage}
+                size={activeSize}
+                totalPages={activeUsersQuery.data?.totalPages ?? 1}
+                totalElements={activeTotal}
+                disabled={activeUsersQuery.isFetching}
+                onPageChange={(page) => setActivePage(page)}
+                onSizeChange={(size) => {
+                  setActiveSize(size);
+                  setActivePage(0);
+                }}
+              />
+            </>
           )}
         </CardContent>
       </Card>

@@ -73,8 +73,8 @@ export default function AppLayout() {
   if (isPrint) return <Outlet />;
 
   return (
-    <div className="min-h-screen flex bg-background">
-      <aside className="no-print w-64 shrink-0 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col">
+    <div className="h-screen overflow-hidden flex bg-background">
+      <aside className="no-print w-64 shrink-0 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col sticky top-0 h-screen overflow-y-auto">
         <div className="px-6 py-6 border-b border-sidebar-border flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground grid place-items-center">
             <Eye className="h-5 w-5" />
@@ -146,7 +146,7 @@ export default function AppLayout() {
           </div>
         </div>
       </aside>
-      <main className="flex-1 min-w-0">
+      <main className="flex-1 min-w-0 overflow-y-auto">
         <Outlet />
       </main>
     </div>

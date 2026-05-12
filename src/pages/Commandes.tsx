@@ -20,6 +20,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import {
   Plus,
   Search,
   Printer,
@@ -31,10 +38,12 @@ import {
 import { formatDZD, formatDateTime, statutLabel } from '@/lib/format';
 import {
   useClients,
-  useCommandes,
+  usePaginatedCommandes, // ✅ replaces useCommandes
   useDeleteCommande,
   useUpdateCommandeStatut,
+  DEFAULT_PAGE_SIZE,
 } from '@/lib/data';
+import { useDebounce } from '@/hooks/use-debounce';
 import type { CommandeStatut } from '@/lib/types';
 import { toast } from 'sonner';
 
@@ -47,7 +56,6 @@ const statutColors: Record<CommandeStatut, string> = {
 
 export default function Commandes() {
   const { data: clients = [] } = useClients();
-  const { data: commandes = [], isLoading } = useCommandes();
   const updateStatut = useUpdateCommandeStatut();
   const deleteMut = useDeleteCommande();
 
@@ -56,22 +64,25 @@ export default function Commandes() {
   const [clientId, setClientId] = useState<string>('ALL');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
-  const filtered = commandes.filter((c) => {
-    const cl = clients.find((x) => x.id === c.clientId);
-    const haystack =
-      `${c.numero} ${cl ? cl.prenom + ' ' + cl.nom : ''}`.toLowerCase();
-    if (!haystack.includes(q.toLowerCase())) return false;
-    if (statut !== 'ALL' && c.statut !== statut) return false;
-    if (clientId !== 'ALL' && c.clientId !== clientId) return false;
-    if (dateFrom && new Date(c.createdAt) < new Date(dateFrom)) return false;
-    if (dateTo) {
-      const end = new Date(dateTo);
-      end.setHours(23, 59, 59, 999);
-      if (new Date(c.createdAt) > end) return false;
-    }
-    return true;
+  const debouncedQ = useDebounce(q, 300);
+
+  // ✅ Server-side filtering & pagination — no more fetching 10,000 records
+  const { data, isLoading } = usePaginatedCommandes({
+    page,
+    size: pageSize,
+    q: debouncedQ,
+    statut: statut === 'ALL' ? undefined : statut,
+    clientId: clientId === 'ALL' ? undefined : clientId,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
   });
+
+  const commandes = data?.content ?? [];
+  const totalPages = data?.totalPages ?? 1;
+  const totalElements = data?.totalElements ?? 0;
 
   const resetFilters = () => {
     setQ('');
@@ -79,6 +90,7 @@ export default function Commandes() {
     setClientId('ALL');
     setDateFrom('');
     setDateTo('');
+    setPage(0);
   };
   const hasFilters =
     q || statut !== 'ALL' || clientId !== 'ALL' || dateFrom || dateTo;
@@ -93,9 +105,9 @@ export default function Commandes() {
     }
   };
 
-  const changeStatut = async (id: string, statut: CommandeStatut) => {
+  const changeStatut = async (id: string, s: CommandeStatut) => {
     try {
-      await updateStatut.mutateAsync({ id, statut });
+      await updateStatut.mutateAsync({ id, statut: s });
     } catch (e: any) {
       toast.error(e.message ?? 'Erreur');
     }
@@ -121,12 +133,21 @@ export default function Commandes() {
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setPage(0);
+              }}
               placeholder="N° ou client..."
               className="pl-9"
             />
           </div>
-          <Select value={clientId} onValueChange={setClientId}>
+          <Select
+            value={clientId}
+            onValueChange={(v) => {
+              setClientId(v);
+              setPage(0);
+            }}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Client" />
             </SelectTrigger>
@@ -139,7 +160,13 @@ export default function Commandes() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={statut} onValueChange={setStatut}>
+          <Select
+            value={statut}
+            onValueChange={(v) => {
+              setStatut(v);
+              setPage(0);
+            }}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -154,14 +181,20 @@ export default function Commandes() {
           <Input
             type="date"
             value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
+            onChange={(e) => {
+              setDateFrom(e.target.value);
+              setPage(0);
+            }}
             placeholder="Du"
           />
           <div className="flex gap-2">
             <Input
               type="date"
               value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
+              onChange={(e) => {
+                setDateTo(e.target.value);
+                setPage(0);
+              }}
               placeholder="Au"
             />
             {hasFilters && (
@@ -177,8 +210,31 @@ export default function Commandes() {
           </div>
         </div>
 
-        <div className="text-sm text-muted-foreground">
-          {filtered.length} résultat(s)
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            {totalElements} résultat(s) {/* ✅ from server, always accurate */}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Afficher</span>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={(v) => {
+                setPageSize(Number(v));
+                setPage(0);
+              }}
+            >
+              <SelectTrigger className="w-[80px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[10, 20, 50, 100].map((size) => (
+                  <SelectItem key={size} value={size.toString()}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <Card className="shadow-[var(--shadow-card)]">
@@ -201,7 +257,7 @@ export default function Commandes() {
                       <Loader2 className="h-5 w-5 animate-spin inline" />
                     </TableCell>
                   </TableRow>
-                ) : filtered.length === 0 ? (
+                ) : commandes.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={6}
@@ -211,7 +267,7 @@ export default function Commandes() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((c) => {
+                  commandes.map((c) => {
                     const cl = clients.find((x) => x.id === c.clientId);
                     return (
                       <TableRow key={c.id}>
@@ -256,32 +312,34 @@ export default function Commandes() {
                           {formatDZD(c.montantTotal)}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            asChild
-                            size="icon"
-                            variant="ghost"
-                            disabled={[
-                              'EN_TRAITEMENT',
-                              'TERMINEE',
-                              'ANNULEE',
-                            ].includes(c.statut)}
-                          >
-                            <Link to={`/commandes/${c.id}/modifier`}>
-                              <Pencil className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                          <Button asChild size="icon" variant="ghost">
-                            <Link to={`/commandes/${c.id}/imprimer`}>
-                              <Printer className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => remove(c.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              asChild
+                              size="icon"
+                              variant="ghost"
+                              disabled={[
+                                'EN_TRAITEMENT',
+                                'TERMINEE',
+                                'ANNULEE',
+                              ].includes(c.statut)}
+                            >
+                              <Link to={`/commandes/${c.id}/modifier`}>
+                                <Pencil className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                            <Button asChild size="icon" variant="ghost">
+                              <Link to={`/commandes/${c.id}/imprimer`}>
+                                <Printer className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => remove(c.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -291,6 +349,40 @@ export default function Commandes() {
             </Table>
           </CardContent>
         </Card>
+
+        {totalPages > 1 && (
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  className={
+                    page === 0
+                      ? 'pointer-events-none opacity-50'
+                      : 'cursor-pointer'
+                  }
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <span className="text-sm text-muted-foreground px-4">
+                  Page {page + 1} sur {totalPages}
+                </span>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    setPage((p) => Math.min(totalPages - 1, p + 1))
+                  }
+                  className={
+                    page === totalPages - 1
+                      ? 'pointer-events-none opacity-50'
+                      : 'cursor-pointer'
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        )}
       </div>
     </>
   );
