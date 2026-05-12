@@ -265,6 +265,35 @@ export default function AdminUsers() {
 
   // ─── Toggle Role ───────────────────────────────────────────────────────
 
+  const confirmToggleStatus = (user: AdminUser) => {
+    setConfirmAction({
+      type: 'toggle_status',
+      user,
+    });
+  };
+
+  const executeToggleStatus = async () => {
+    if (!confirmAction || confirmAction.type !== 'toggle_status') return;
+
+    const { user } = confirmAction;
+    setBusyId(user.id);
+    try {
+      await apiClient.patch(`/admin/users/${user.id}/toggle-status`);
+      toast.success(
+        user.status === 'ACTIVE'
+          ? 'Utilisateur suspendu'
+          : 'Utilisateur activé',
+      );
+      setConfirmAction(null);
+      await load();
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Erreur de modification';
+      toast.error(message);
+    } finally {
+      setBusyId('');
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <PageHeader
@@ -491,20 +520,40 @@ export default function AdminUsers() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        {canEdit ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openEditFor(u)}
-                          >
-                            <Edit2 className="h-3.5 w-3.5 mr-1" />
-                            Modifier
-                          </Button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            Non modifiable
-                          </span>
-                        )}
+                        <div className="flex justify-end gap-2">
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEditFor(u)}
+                            >
+                              <Edit2 className="h-3.5 w-3.5 mr-1" />
+                              Modifier
+                            </Button>
+                          )}
+                          {isSuperAdmin && u.status !== 'ACTIVE' && (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              disabled={busyId === u.id}
+                              onClick={() => confirmToggleStatus(u)}
+                            >
+                              {busyId === u.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <>
+                                  <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                                  Activer
+                                </>
+                              )}
+                            </Button>
+                          )}
+                          {!canEdit && !isSuperAdmin && (
+                            <span className="text-xs text-muted-foreground">
+                              Non modifiable
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -620,6 +669,15 @@ export default function AdminUsers() {
                   ?
                 </p>
               )}
+              {confirmAction?.type === 'toggle_status' && (
+                <p>
+                  Êtes-vous sûr de vouloir{' '}
+                  {confirmAction.user.status === 'ACTIVE'
+                    ? 'suspendre'
+                    : 'activer'}{' '}
+                  le compte de <strong>{confirmAction.user.fullName}</strong> ?
+                </p>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -641,6 +699,8 @@ export default function AdminUsers() {
                   executeRejectUser();
                 } else if (confirmAction?.type === 'change_role') {
                   executeEditUser();
+                } else if (confirmAction?.type === 'toggle_status') {
+                  executeToggleStatus();
                 }
               }}
               disabled={busyId === confirmAction?.user.id || updatingUser}

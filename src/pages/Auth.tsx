@@ -38,7 +38,7 @@ export default function Auth() {
   const [suName, setSuName] = useState('');
   const [suEmail, setSuEmail] = useState('');
   const [suPwd, setSuPwd] = useState('');
-  const [suStoreId, setSuStoreId] = useState('');
+  const [suStoreName, setSuStoreName] = useState('');
 
   if (loading)
     return (
@@ -85,7 +85,7 @@ export default function Auth() {
       nameSchema.parse(suName);
       emailSchema.parse(suEmail);
       strongPasswordSchema.parse(suPwd);
-      z.string().uuid('Store ID invalide').parse(suStoreId);
+      z.string().min(1, 'Nom du magasin requis').max(255).parse(suStoreName);
     } catch (err) {
       return toast.error(
         err instanceof z.ZodError ? err.errors[0].message : 'Champs invalides',
@@ -97,7 +97,7 @@ export default function Auth() {
         email: suEmail,
         password: suPwd,
         fullName: suName,
-        storeId: suStoreId,
+        storeName: suStoreName,
       });
       toast.success(
         "Inscription soumise ! Votre compte est en attente d'approbation par un administrateur.",
@@ -106,7 +106,7 @@ export default function Auth() {
       setSuName('');
       setSuEmail('');
       setSuPwd('');
-      setSuStoreId('');
+      setSuStoreName('');
     } catch (error: any) {
       toast.error(
         error.response?.data?.message || "Erreur lors de l'inscription",
@@ -234,11 +234,11 @@ export default function Auth() {
                       />
                     </div>
                     <div>
-                      <Label>ID du magasin</Label>
+                      <Label>Nom du magasin</Label>
                       <Input
-                        value={suStoreId}
-                        onChange={(e) => setSuStoreId(e.target.value)}
-                        placeholder="Entrez l'ID du magasin"
+                        value={suStoreName}
+                        onChange={(e) => setSuStoreName(e.target.value)}
+                        placeholder="Entrez le nom du magasin"
                         required
                       />
                     </div>
