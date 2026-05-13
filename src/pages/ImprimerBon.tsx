@@ -9,7 +9,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
-import { useClients, useCommande, useOrdonnances } from '@/lib/data';
+import { useClients, useCommande, useOrdonnances, useStore } from '@/lib/data';
 import {
   BonClassique,
   BonCompact,
@@ -31,6 +31,7 @@ export default function ImprimerBon() {
   const { data: cmd, isLoading } = useCommande(id);
   const { data: clients = [] } = useClients();
   const { data: ordonnances = [] } = useOrdonnances();
+  const { data: store } = useStore();
   const [tpl, setTpl] = useState<BonTemplate>(getBonTemplate());
   const [zoom, setZoom] = useState(1);
   const [downloading, setDownloading] = useState(false);
@@ -157,7 +158,7 @@ export default function ImprimerBon() {
               boxSizing: 'border-box',
             }}
           >
-            <Render cmd={cmd} client={client} ord={ord} />
+            <Render cmd={cmd} client={client} ord={ord} store={store} />
           </div>
         </div>
       </div>

@@ -8,6 +8,7 @@ import type {
   Ordonnance,
   Produit,
   PaginatedResponse,
+  Store,
 } from './types';
 
 const fetchPaginated = async <T>(
@@ -386,3 +387,45 @@ export const useDeleteCommande = () => {
     },
   });
 };
+
+// ==================== STORE ====================
+
+const STORE_KEY = ['store'] as const;
+
+export const useStore = () =>
+  useQuery({
+    queryKey: STORE_KEY,
+    queryFn: async () => {
+      const { data } = await apiClient.get<Store>('/store');
+      return data;
+    },
+  });
+
+export const useUpdateStore = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (patch: Partial<Store>) => {
+      const { data } = await apiClient.patch<Store>('/store', patch);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: STORE_KEY }),
+  });
+};
+
+export const useUpdateStoreLogo = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('logo', file);
+      const { data } = await apiClient.post<Store>('/store/logo', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: STORE_KEY }),
+  });
+};
+

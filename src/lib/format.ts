@@ -5,7 +5,7 @@ export const formatDZD = (n: number) =>
     style: 'currency',
     currency: 'DZD',
     maximumFractionDigits: 2,
-  }).format(n);
+  }).format(Number.isNaN(n) ? 0 : n);
 
 export const formatDate = (s?: string) =>
   s

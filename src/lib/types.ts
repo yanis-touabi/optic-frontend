@@ -96,3 +96,13 @@ export interface Commande {
   dateLivraisonPrevue?: string;
   client?: Partial<Client>;
 }
+
+export interface Store {
+  id: string;
+  name: string;
+  description?: string;
+  logoUrl?: string;
+  telephone?: string;
+  address?: string;
+}
+

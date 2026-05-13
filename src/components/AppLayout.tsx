@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, type AppRole } from '@/lib/auth';
+import { useStore } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -60,6 +61,7 @@ export default function AppLayout() {
   const loc = useLocation();
   const navigate = useNavigate();
   const { user, signOut, isSuperAdmin, isAdmin } = useAuth();
+  const { data: store } = useStore();
   const visibleNav = nav.filter((n) => {
     if (!n.role) return true;
     if (isSuperAdmin) return true; // SUPER_ADMIN sees everything
@@ -84,6 +86,12 @@ export default function AppLayout() {
     navigate('/auth');
   };
 
+  const getLogoUrl = () => {
+    if (!store?.logoUrl) return null;
+    const base = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '');
+    return `${base}/${store.logoUrl}`;
+  };
+
   if (isPrint) return <Outlet />;
 
   return (
@@ -100,12 +108,16 @@ export default function AppLayout() {
             isCollapsed ? 'px-4 justify-center' : 'px-6',
           )}
         >
-          <div className="h-10 w-10 shrink-0 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground grid place-items-center">
-            <Eye className="h-5 w-5" />
+          <div className="h-10 w-10 shrink-0 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground grid place-items-center overflow-hidden">
+            {getLogoUrl() ? (
+              <img src={getLogoUrl()!} alt="Logo" className="w-full h-full object-cover" />
+            ) : (
+              <Eye className="h-5 w-5" />
+            )}
           </div>
           {!isCollapsed && (
             <div className="overflow-hidden whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-300">
-              <div className="font-semibold tracking-tight">OptiShop</div>
+              <div className="font-semibold tracking-tight">{store?.name || 'OptiShop'}</div>
               <div className="text-xs text-sidebar-foreground/60">
                 Gestion opticien
               </div>

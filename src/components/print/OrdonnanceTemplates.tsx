@@ -8,18 +8,34 @@ const fmt = (n?: number, d = 2) =>
 interface Props {
   ord: Ordonnance;
   client?: Client;
+  store?: any;
 }
 
-const Header = () => (
-  <div>
-    <div className="text-2xl font-bold tracking-tight">OPTISHOP</div>
-    <div className="text-xs text-gray-700 leading-tight mt-1">
-      Magasin d'Optique · 123 Rue de la Vue, Alger
-      <br />
-      Tél: 021 00 00 00 · contact@optishop.dz
+const Header = ({ store }: { store?: any }) => {
+  const getLogoUrl = () => {
+    if (!store?.logoUrl) return null;
+    const base = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '');
+    return `${base}/${store.logoUrl}`;
+  };
+
+  return (
+    <div className="flex items-start gap-4">
+      {getLogoUrl() && (
+        <img src={getLogoUrl()!} alt="Logo" className="h-12 w-12 object-contain" />
+      )}
+      <div>
+        <div className="text-2xl font-bold tracking-tight uppercase">
+          {store?.name || 'OPTISHOP'}
+        </div>
+        <div className="text-[10px] text-gray-700 leading-tight mt-1 whitespace-pre-line">
+          Magasin d'Optique
+          {store?.address && <><br />{store.address}</>}
+          {store?.telephone && <><br />Tél: {store.telephone}</>}
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ClientInfo = ({ client, ord }: Props) => (
   <div className="grid grid-cols-2 gap-6 mb-4 text-[12px]">
@@ -90,7 +106,7 @@ export function OrdonnanceClassique({ ord, client }: Props) {
   return (
     <div className="font-sans text-[13px] text-black">
       <div className="flex justify-between items-start mb-6 border-b-2 border-black pb-4">
-        <Header />
+        <Header store={store} />
         <div className="text-right">
           <div className="text-xl font-semibold">Ordonnance</div>
           <Barcode
@@ -186,11 +202,11 @@ export function OrdonnanceClassique({ ord, client }: Props) {
   );
 }
 
-export function OrdonnanceCompact({ ord, client }: Props) {
+export function OrdonnanceCompact({ ord, client, store }: Props) {
   return (
     <div className="font-sans text-[12px] text-black">
       <div className="flex justify-between items-center mb-3 border-b border-black pb-2">
-        <div className="font-bold text-lg">OPTISHOP — Ordonnance</div>
+        <div className="font-bold text-lg">{store?.name?.toUpperCase() || 'OPTISHOP'} — Ordonnance</div>
         <div className="text-right text-[10px]">
           {formatDate(ord.datePrescription)}
         </div>
@@ -251,7 +267,7 @@ export function OrdonnanceDetaille({ ord, client }: Props) {
   return (
     <div className="font-sans text-[13px] text-black">
       <div className="flex justify-between items-start mb-6 border-b-2 border-black pb-4">
-        <Header />
+        <Header store={store} />
         <div className="text-right">
           <div className="text-xl font-semibold">Ordonnance détaillée</div>
           <div className="text-xs text-gray-600 mt-1">
