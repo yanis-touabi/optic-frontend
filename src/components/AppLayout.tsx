@@ -11,6 +11,10 @@ import {
   LogOut,
   UserCircle,
   ShieldCheck,
+  ChevronLeft,
+  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, type AppRole } from '@/lib/auth';
@@ -63,6 +67,16 @@ export default function AppLayout() {
     return true;
   });
   const isPrint = loc.pathname.includes('/imprimer');
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebar-collapsed');
+    return saved === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', String(isCollapsed));
+  }, [isCollapsed]);
+
+  const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
   const handleLogout = async () => {
     await signOut();
@@ -74,41 +88,59 @@ export default function AppLayout() {
 
   return (
     <div className="h-screen overflow-hidden flex bg-background">
-      <aside className="no-print w-64 shrink-0 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col sticky top-0 h-screen overflow-y-auto">
-        <div className="px-6 py-6 border-b border-sidebar-border flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground grid place-items-center">
+      <aside
+        className={cn(
+          'no-print shrink-0 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col sticky top-0 h-screen transition-all duration-300 ease-in-out',
+          isCollapsed ? 'w-[70px]' : 'w-64',
+        )}
+      >
+        <div
+          className={cn(
+            'py-6 border-b border-sidebar-border flex items-center gap-3 transition-all duration-300',
+            isCollapsed ? 'px-4 justify-center' : 'px-6',
+          )}
+        >
+          <div className="h-10 w-10 shrink-0 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground grid place-items-center">
             <Eye className="h-5 w-5" />
           </div>
-          <div>
-            <div className="font-semibold tracking-tight">OptiShop</div>
-            <div className="text-xs text-sidebar-foreground/60">
-              Gestion opticien
+          {!isCollapsed && (
+            <div className="overflow-hidden whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-300">
+              <div className="font-semibold tracking-tight">OptiShop</div>
+              <div className="text-xs text-sidebar-foreground/60">
+                Gestion opticien
+              </div>
             </div>
-          </div>
+          )}
         </div>
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
           {visibleNav.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
               end={n.end}
+              title={isCollapsed ? n.label : undefined}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors',
+                  'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200',
+                  isCollapsed ? 'justify-center px-0' : '',
                   isActive
                     ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                     : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground',
                 )
               }
             >
-              <n.icon className="h-4 w-4" />
-              {n.label}
+              <n.icon className="h-4 w-4 shrink-0" />
+              {!isCollapsed && (
+                <span className="overflow-hidden whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-300">
+                  {n.label}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>
         <div className="px-3 py-3 border-t border-sidebar-border space-y-2">
-          {user && (
-            <div className="px-3 py-1 space-y-1">
+          {user && !isCollapsed && (
+            <div className="px-3 py-1 space-y-1 animate-in fade-in duration-300">
               <div
                 className="text-sm font-medium text-sidebar-foreground truncate"
                 title={user.displayName || 'Utilisateur'}
@@ -135,15 +167,32 @@ export default function AppLayout() {
           )}
           <Button
             variant="ghost"
-            className="w-full justify-start text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+            className={cn(
+              'w-full text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground transition-all duration-200',
+              isCollapsed ? 'justify-center px-0' : 'justify-start',
+            )}
             onClick={handleLogout}
+            title={isCollapsed ? 'Déconnexion' : undefined}
           >
-            <LogOut className="h-4 w-4" />
-            Déconnexion
+            <LogOut className="h-4 w-4 shrink-0" />
+            {!isCollapsed && <span className="ml-3">Déconnexion</span>}
           </Button>
-          <div className="px-3 text-[10px] text-sidebar-foreground/40">
-            v1.0
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-full text-sidebar-foreground/40 hover:text-sidebar-foreground/70"
+            onClick={toggleSidebar}
+            title={isCollapsed ? 'Agrandir' : 'Réduire'}
+          >
+            {isCollapsed ? (
+              <PanelLeftOpen className="h-4 w-4" />
+            ) : (
+              <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider">
+                <PanelLeftClose className="h-4 w-4" />
+                <span>Réduire</span>
+              </div>
+            )}
+          </Button>
         </div>
       </aside>
       <main className="flex-1 min-w-0 overflow-y-auto">

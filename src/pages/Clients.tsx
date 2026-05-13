@@ -34,7 +34,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { Plus, Pencil, Trash2, Search, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Loader2, Download } from 'lucide-react';
+import { exportToCSV } from '@/lib/csv';
 import type { Client } from '@/lib/types';
 import {
   usePaginatedClients,
@@ -143,6 +144,21 @@ export default function Clients() {
     }
   };
 
+  const handleExport = () => {
+    exportToCSV(
+      clients,
+      {
+        prenom: 'Prénom',
+        nom: 'Nom',
+        telephone: 'Téléphone',
+        email: 'Email',
+        adresse: 'Adresse',
+        dateNaissance: 'Date de Naissance',
+      },
+      'clients',
+    );
+  };
+
   const saving = createMut.isPending || updateMut.isPending;
 
   return (
@@ -151,10 +167,16 @@ export default function Clients() {
         title="Clients"
         description="Gérez votre fichier client"
         actions={
-          <Button onClick={openNew}>
-            <Plus className="h-4 w-4" />
-            Nouveau client
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="h-4 w-4" />
+              Exporter CSV
+            </Button>
+            <Button onClick={openNew}>
+              <Plus className="h-4 w-4" />
+              Nouveau client
+            </Button>
+          </div>
         }
       />
       <div className="p-8 space-y-4">

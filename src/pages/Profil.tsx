@@ -63,9 +63,10 @@ export default function Profil() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-8 max-w-5xl mx-auto">
       <PageHeader title="Profil" description="Vos informations de compte" />
-      <div className="grid gap-6 max-w-2xl">
+      <div className="grid gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-7">
         <Card>
           <CardHeader>
             <CardTitle>Informations</CardTitle>
@@ -93,42 +94,45 @@ export default function Profil() {
             </form>
           </CardContent>
         </Card>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Sécurité</CardTitle>
-            <CardDescription>Réinitialiser votre mot de passe</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" onClick={sendReset} disabled={resetBusy}>
-              {resetBusy ? 'Envoi...' : 'Envoyer le lien de réinitialisation'}
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="lg:col-span-5 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Sécurité</CardTitle>
+              <CardDescription>Réinitialiser votre mot de passe</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" onClick={sendReset} disabled={resetBusy} className="w-full">
+                {resetBusy ? 'Envoi...' : 'Envoyer le lien de réinitialisation'}
+              </Button>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Rôle</CardTitle>
-            <CardDescription>
-              Vos autorisations dans l'application
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {!user?.role ? (
-              <p className="text-sm text-muted-foreground">
-                Aucun rôle assigné. Contactez un administrateur.
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                <Badge
-                  variant={user.role === 'ADMIN' ? 'default' : 'secondary'}
-                >
-                  {user.role}
-                </Badge>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Rôle</CardTitle>
+              <CardDescription>
+                Vos autorisations dans l'application
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!user?.role ? (
+                <p className="text-sm text-muted-foreground">
+                  Aucun rôle assigné. Contactez un administrateur.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  <Badge
+                    variant={user.role === 'ADMIN' ? 'default' : 'secondary'}
+                  >
+                    {user.role}
+                  </Badge>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

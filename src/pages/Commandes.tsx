@@ -34,7 +34,25 @@ import {
   Loader2,
   Pencil,
   X,
+  Download,
+  Check,
+  ChevronsUpDown,
 } from 'lucide-react';
+import { exportToCSV } from '@/lib/csv';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 import { formatDZD, formatDateTime, statutLabel } from '@/lib/format';
 import {
   useClients,
@@ -48,10 +66,10 @@ import type { CommandeStatut } from '@/lib/types';
 import { toast } from 'sonner';
 
 const statutColors: Record<CommandeStatut, string> = {
-  EN_ATTENTE: 'bg-warning/15 text-warning border-warning/30',
-  EN_TRAITEMENT: 'bg-primary/15 text-primary border-primary/30',
-  TERMINEE: 'bg-success/15 text-success border-success/30',
-  ANNULEE: 'bg-destructive/15 text-destructive border-destructive/30',
+  EN_ATTENTE: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800',
+  EN_TRAITEMENT: 'bg-primary/10 text-primary border-primary/20',
+  TERMINEE: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',
+  ANNULEE: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
 export default function Commandes() {
@@ -66,6 +84,7 @@ export default function Commandes() {
   const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [clientOpen, setClientOpen] = useState(false);
 
   const debouncedQ = useDebounce(q, 300);
 
@@ -113,18 +132,43 @@ export default function Commandes() {
     }
   };
 
+  const handleExport = () => {
+    exportToCSV(
+      commandes.map((c) => ({
+        ...c,
+        clientName: clients.find((cl) => cl.id === c.clientId)?.nom || '—',
+        formattedDate: formatDateTime(c.createdAt),
+        statutLabel: statutLabel[c.statut],
+      })),
+      {
+        numero: 'N°',
+        clientName: 'Client',
+        formattedDate: 'Date',
+        statutLabel: 'Statut',
+        montantTotal: 'Montant (DZD)',
+      },
+      'bons_de_commande',
+    );
+  };
+
   return (
     <>
       <PageHeader
         title="Bons de commande"
         description="Historique de tous les bons"
         actions={
-          <Button asChild>
-            <Link to="/commandes/nouveau">
-              <Plus className="h-4 w-4" />
-              Nouveau bon
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="h-4 w-4" />
+              Exporter CSV
+            </Button>
+            <Button asChild>
+              <Link to="/commandes/nouveau">
+                <Plus className="h-4 w-4" />
+                Nouveau bon
+              </Link>
+            </Button>
+          </div>
         }
       />
       <div className="p-8 space-y-4">
@@ -141,25 +185,68 @@ export default function Commandes() {
               className="pl-9"
             />
           </div>
-          <Select
-            value={clientId}
-            onValueChange={(v) => {
-              setClientId(v);
-              setPage(0);
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Client" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tous les clients</SelectItem>
-              {clients.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.prenom} {c.nom}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={clientOpen} onOpenChange={setClientOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={clientOpen}
+                className="justify-between font-normal"
+              >
+                {clientId !== 'ALL'
+                  ? clients.find((c) => c.id === clientId)?.prenom +
+                    ' ' +
+                    clients.find((c) => c.id === clientId)?.nom
+                  : 'Tous les clients'}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-0">
+              <Command>
+                <CommandInput placeholder="Rechercher un client..." />
+                <CommandList>
+                  <CommandEmpty>Aucun client trouvé.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="ALL"
+                      onSelect={() => {
+                        setClientId('ALL');
+                        setPage(0);
+                        setClientOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          'mr-2 h-4 w-4',
+                          clientId === 'ALL' ? 'opacity-100' : 'opacity-0',
+                        )}
+                      />
+                      Tous les clients
+                    </CommandItem>
+                    {clients.map((c) => (
+                      <CommandItem
+                        key={c.id}
+                        value={`${c.prenom} ${c.nom}`}
+                        onSelect={() => {
+                          setClientId(c.id);
+                          setPage(0);
+                          setClientOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4',
+                            clientId === c.id ? 'opacity-100' : 'opacity-0',
+                          )}
+                        />
+                        {c.prenom} {c.nom}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
           <Select
             value={statut}
             onValueChange={(v) => {

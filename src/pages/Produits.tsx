@@ -35,7 +35,8 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Search, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Loader2, Download } from 'lucide-react';
+import { exportToCSV } from '@/lib/csv';
 import { formatDZD } from '@/lib/format';
 import {
   usePaginatedProduits,
@@ -147,6 +148,21 @@ export default function Produits() {
     }
   };
 
+  const handleExport = () => {
+    exportToCSV(
+      produits,
+      {
+        nom: 'Nom',
+        marque: 'Marque',
+        modele: 'Modèle',
+        categorie: 'Catégorie',
+        prix: 'Prix (DZD)',
+        stock: 'Stock',
+      },
+      'produits',
+    );
+  };
+
   const saving = createMut.isPending || updateMut.isPending;
 
   return (
@@ -155,10 +171,16 @@ export default function Produits() {
         title="Produits"
         description="Catalogue de montures, verres et accessoires"
         actions={
-          <Button onClick={openNew}>
-            <Plus className="h-4 w-4" />
-            Nouveau produit
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="h-4 w-4" />
+              Exporter CSV
+            </Button>
+            <Button onClick={openNew}>
+              <Plus className="h-4 w-4" />
+              Nouveau produit
+            </Button>
+          </div>
         }
       />
       <div className="p-8 space-y-4">

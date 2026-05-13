@@ -27,7 +27,7 @@ export default function Dashboard() {
 
   const totalCA = commandes
     .filter((c) => c.statut !== 'ANNULEE')
-    .reduce((s, c) => s + c.montantTotal, 0);
+    .reduce((s, c) => s + (Number(c.montantTotal) || 0), 0);
   const enCours = commandes.filter(
     (c) => c.statut === 'EN_ATTENTE' || c.statut === 'EN_TRAITEMENT',
   ).length;
