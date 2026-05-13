@@ -103,25 +103,43 @@ export default function AppLayout() {
         )}
       >
         <div
+          onClick={toggleSidebar}
           className={cn(
-            'py-6 border-b border-sidebar-border flex items-center gap-3 transition-all duration-300',
+            'py-6 border-b border-sidebar-border flex items-center gap-3 transition-all duration-300 cursor-pointer hover:bg-sidebar-accent/50 group relative',
             isCollapsed ? 'px-4 justify-center' : 'px-6',
           )}
+          title={isCollapsed ? 'Agrandir' : 'Réduire'}
         >
-          <div className="h-10 w-10 shrink-0 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground grid place-items-center overflow-hidden">
-            {getLogoUrl() ? (
-              <img src={getLogoUrl()!} alt="Logo" className="w-full h-full object-cover" />
+          <div className="h-10 w-10 shrink-0 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground grid place-items-center overflow-hidden transition-all duration-300 group-hover:scale-105 group-active:scale-95">
+            {isCollapsed ? (
+              <div className="relative h-full w-full flex items-center justify-center">
+                <div className="group-hover:opacity-0 transition-opacity duration-300 flex items-center justify-center w-full h-full">
+                  {getLogoUrl() ? (
+                    <img src={getLogoUrl()!} alt="Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </div>
+                <PanelLeftOpen className="absolute inset-0 m-auto h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </div>
             ) : (
-              <Eye className="h-5 w-5" />
+              getLogoUrl() ? (
+                <img src={getLogoUrl()!} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )
             )}
           </div>
           {!isCollapsed && (
-            <div className="overflow-hidden whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-300">
+            <div className="flex-1 overflow-hidden whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-300">
               <div className="font-semibold tracking-tight">{store?.name || 'OptiShop'}</div>
               <div className="text-xs text-sidebar-foreground/60">
                 Gestion opticien
               </div>
             </div>
+          )}
+          {!isCollapsed && (
+            <PanelLeftClose className="h-4 w-4 text-sidebar-foreground/40 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-0 -translate-x-2" />
           )}
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
@@ -189,22 +207,7 @@ export default function AppLayout() {
             <LogOut className="h-4 w-4 shrink-0" />
             {!isCollapsed && <span className="ml-3">Déconnexion</span>}
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-full text-sidebar-foreground/40 hover:text-sidebar-foreground/70"
-            onClick={toggleSidebar}
-            title={isCollapsed ? 'Agrandir' : 'Réduire'}
-          >
-            {isCollapsed ? (
-              <PanelLeftOpen className="h-4 w-4" />
-            ) : (
-              <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider">
-                <PanelLeftClose className="h-4 w-4" />
-                <span>Réduire</span>
-              </div>
-            )}
-          </Button>
+
         </div>
       </aside>
       <main className="flex-1 min-w-0 overflow-y-auto">
