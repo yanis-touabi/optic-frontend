@@ -21,8 +21,22 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Trash2, Printer, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Printer, Loader2, Check, ChevronsUpDown } from 'lucide-react';
 import { formatDZD } from '@/lib/format';
+import { cn } from '@/lib/utils';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import {
   useClients,
   useOrdonnances,
@@ -49,6 +63,10 @@ export default function NouveauBon() {
   const [notes, setNotes] = useState('');
   const [dateLivraison, setDateLivraison] = useState('');
   const [pickProduit, setPickProduit] = useState<string>('');
+
+  const [clientOpen, setClientOpen] = useState(false);
+  const [ordOpen, setOrdOpen] = useState(false);
+  const [produitOpen, setProduitOpen] = useState(false);
 
   // Default to first client if not chosen yet
   const effectiveClientId = clientId || clients[0]?.id || '';
@@ -168,37 +186,118 @@ export default function NouveauBon() {
               <CardTitle className="text-base">Client & ordonnance</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="flex flex-col gap-1.5">
                 <Label>Client *</Label>
-                <Select value={effectiveClientId} onValueChange={setClientId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choisir..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.prenom} {c.nom}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={clientOpen} onOpenChange={setClientOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={clientOpen}
+                      className="justify-between font-normal"
+                    >
+                      {effectiveClientId
+                        ? clients.find((c) => c.id === effectiveClientId)?.prenom +
+                          ' ' +
+                          clients.find((c) => c.id === effectiveClientId)?.nom
+                        : 'Choisir un client...'}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Rechercher un client..." />
+                      <CommandList>
+                        <CommandEmpty>Aucun client trouvé.</CommandEmpty>
+                        <CommandGroup>
+                          {clients.map((c) => (
+                            <CommandItem
+                              key={c.id}
+                              value={`${c.prenom} ${c.nom}`}
+                              onSelect={() => {
+                                setClientId(c.id);
+                                setClientOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  effectiveClientId === c.id ? 'opacity-100' : 'opacity-0',
+                                )}
+                              />
+                              {c.prenom} {c.nom}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
-              <div>
+              <div className="flex flex-col gap-1.5">
                 <Label>Ordonnance</Label>
-                <Select value={ordonnanceId} onValueChange={setOrdonnanceId}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Aucune</SelectItem>
-                    {ordonnancesClient.map((o) => (
-                      <SelectItem key={o.id} value={o.id}>
-                        {o.nomMedecin || 'Sans médecin'} — OD{' '}
-                        {o.odSphere ?? '—'} / OG {o.ogSphere ?? '—'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={ordOpen} onOpenChange={setOrdOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={ordOpen}
+                      className="justify-between font-normal"
+                      disabled={!effectiveClientId}
+                    >
+                      {ordonnanceId !== 'none'
+                        ? ordonnancesClient.find((o) => o.id === ordonnanceId)
+                          ? `Dr ${ordonnancesClient.find((o) => o.id === ordonnanceId)?.nomMedecin || 'Sans médecin'}`
+                          : 'Choisir...'
+                        : 'Aucune'}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Rechercher une ordonnance..." />
+                      <CommandList>
+                        <CommandEmpty>Aucune ordonnance trouvée.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value="none"
+                            onSelect={() => {
+                              setOrdonnanceId('none');
+                              setOrdOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 h-4 w-4',
+                                ordonnanceId === 'none' ? 'opacity-100' : 'opacity-0',
+                              )}
+                            />
+                            Aucune
+                          </CommandItem>
+                          {ordonnancesClient.map((o) => (
+                            <CommandItem
+                              key={o.id}
+                              value={`${o.nomMedecin} ${o.id}`}
+                              onSelect={() => {
+                                setOrdonnanceId(o.id);
+                                setOrdOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  ordonnanceId === o.id ? 'opacity-100' : 'opacity-0',
+                                )}
+                              />
+                              {o.nomMedecin || 'Sans médecin'} — OD{' '}
+                              {o.odSphere ?? '—'} / OG {o.ogSphere ?? '—'}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div>
                 <Label>Date de livraison prévue</Label>
@@ -217,18 +316,54 @@ export default function NouveauBon() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2">
-                <Select value={pickProduit} onValueChange={setPickProduit}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Choisir un produit..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {produits.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.nom} — {formatDZD(p.prix)} (stock : {p.stock})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={produitOpen} onOpenChange={setProduitOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={produitOpen}
+                      className="flex-1 justify-between font-normal"
+                    >
+                      {pickProduit
+                        ? produits.find((p) => p.id === pickProduit)?.nom
+                        : 'Choisir un produit...'}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[400px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Rechercher un produit..." />
+                      <CommandList>
+                        <CommandEmpty>Aucun produit trouvé.</CommandEmpty>
+                        <CommandGroup>
+                          {produits.map((p) => (
+                            <CommandItem
+                              key={p.id}
+                              value={`${p.nom} ${p.marque}`}
+                              onSelect={() => {
+                                setPickProduit(p.id);
+                                setProduitOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  pickProduit === p.id ? 'opacity-100' : 'opacity-0',
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span>{p.nom}</span>
+                                <span className="text-[10px] text-muted-foreground">
+                                  {formatDZD(p.prix)} — Stock : {p.stock}
+                                </span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <Button onClick={addLigne} disabled={!pickProduit}>
                   <Plus className="h-4 w-4" />
                   Ajouter
