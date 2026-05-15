@@ -53,7 +53,6 @@ type LocalLigne = LigneCommande;
 export default function NouveauBon() {
   const { data: clients = [] } = useClients();
   const { data: produits = [] } = useProduits();
-  const { data: ordonnances = [] } = useOrdonnances();
   const createMut = useCreateCommande();
   const nav = useNavigate();
 
@@ -70,9 +69,9 @@ export default function NouveauBon() {
 
   // Default to first client if not chosen yet
   const effectiveClientId = clientId || clients[0]?.id || '';
-  const ordonnancesClient = ordonnances.filter(
-    (o) => o.clientId === effectiveClientId,
-  );
+  const { data: ordonnancesClient = [] } = useOrdonnances({
+    clientId: effectiveClientId,
+  });
 
   const total = useMemo(
     () => lignes.reduce((s, l) => s + l.quantite * l.prixUnitaire, 0),

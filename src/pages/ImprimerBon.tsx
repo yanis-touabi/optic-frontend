@@ -9,7 +9,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
-import { useClients, useCommande, useOrdonnances, useStore } from '@/lib/data';
+import { useClients, useCommande, useOrdonnance, useStore } from '@/lib/data';
 import {
   BonClassique,
   BonCompact,
@@ -30,8 +30,8 @@ export default function ImprimerBon() {
   const nav = useNavigate();
   const { data: cmd, isLoading } = useCommande(id);
   const { data: clients = [] } = useClients();
-  const { data: ordonnances = [] } = useOrdonnances();
   const { data: store } = useStore();
+  const { data: ord } = useOrdonnance(cmd?.ordonnanceId);
   const [tpl, setTpl] = useState<BonTemplate>(getBonTemplate());
   const [zoom, setZoom] = useState(1);
   const [downloading, setDownloading] = useState(false);
@@ -60,9 +60,6 @@ export default function ImprimerBon() {
   }
 
   const client = clients.find((c) => c.id === cmd.clientId);
-  const ord = cmd.ordonnanceId
-    ? ordonnances.find((o) => o.id === cmd.ordonnanceId)
-    : undefined;
 
   const onTpl = (v: string) => {
     setTpl(v as BonTemplate);

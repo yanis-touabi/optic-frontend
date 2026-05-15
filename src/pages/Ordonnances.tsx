@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,12 +37,13 @@ import {
 import { Plus, Pencil, Trash2, Printer, Loader2, Search } from 'lucide-react';
 import { formatDate } from '@/lib/format';
 import {
-  usePaginatedClients,
   usePaginatedOrdonnances,
   useCreateOrdonnance,
   useUpdateOrdonnance,
   useDeleteOrdonnance,
+  useClients,
   DEFAULT_PAGE_SIZE,
+  FETCH_ALL_SIZE,
 } from '@/lib/data';
 import { useDebounce } from '@/hooks/use-debounce';
 import type { Ordonnance } from '@/lib/types';
@@ -68,16 +69,11 @@ export default function Ordonnances() {
   const { data, isLoading } = usePaginatedOrdonnances({
     page,
     size: pageSize,
-    q: debouncedSearch,
+    q: debouncedSearch, 
   });
 
-  const { data: clientsData } = usePaginatedClients({
-    page: 0,
-    size: 100,
-    q: '',
-  });
-
-  const clients = clientsData?.content ?? [];
+  // Fetch clients for the Select dropdown in the "New/Edit" dialog.
+  const { data: clientOptions = [] } = useClients();
 
   const createMut = useCreateOrdonnance();
   const updateMut = useUpdateOrdonnance();
@@ -93,7 +89,7 @@ export default function Ordonnances() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ ...empty, clientId: clients[0]?.id ?? '' });
+    setForm({ ...empty, clientId: clientOptions[0]?.id ?? '' });
     setOpen(true);
   };
   const openEdit = (o: Ordonnance) => {
@@ -260,12 +256,11 @@ export default function Ordonnances() {
                   </TableRow>
                 ) : (
                   ordonnances.map((o) => {
-                    // ✅ was paginated.map(...)
-                    const cl = clients.find((c) => c.id === o.clientId);
+                    // Client data is already included in the API response via include: { client }
                     return (
                       <TableRow key={o.id}>
                         <TableCell className="font-medium">
-                          {cl ? `${cl.prenom} ${cl.nom}` : '—'}
+                          {o.client ? `${o.client.prenom} ${o.client.nom}` : '—'}
                         </TableCell>
                         <TableCell>{o.nomMedecin || '—'}</TableCell>
                         <TableCell>{formatDate(o.datePrescription)}</TableCell>
@@ -367,7 +362,7 @@ export default function Ordonnances() {
                     <SelectValue placeholder="Sélectionner..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {clients.map((c) => (
+                    {clientOptions.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.prenom} {c.nom}
                       </SelectItem>

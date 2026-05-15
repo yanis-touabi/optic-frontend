@@ -106,3 +106,52 @@ export interface Store {
   address?: string;
 }
 
+// ── Dashboard Statistics ──────────────────────────────────────────────────────
+
+export interface KpiValue {
+  value: number;
+  previousValue: number;
+  variationPercent: number | null;
+}
+
+export interface MonthlyCaItem {
+  mois: string;
+  ca: number;
+}
+
+export interface StatusCountItem {
+  name: string;
+  value: number;
+}
+
+export interface TopProductItem {
+  id: string;
+  nom: string;
+  qte: number;
+  ca: number;
+}
+
+export interface RecentOrderItem {
+  id: string;
+  numero: number;
+  clientNom: string;
+  clientPrenom: string;
+  montantTotal: number;
+  statut: string;
+  createdAt: string;
+}
+
+export interface DashboardStatistics {
+  period: string;
+  commandes: KpiValue;
+  clients: KpiValue;
+  produits: KpiValue;
+  ordonnances: KpiValue;
+  totalCA: KpiValue;
+  commandesEnCours: KpiValue;
+  statusBreakdown: StatusCountItem[];
+  top5Produits: TopProductItem[];
+  caMensuel: MonthlyCaItem[];
+  dernieresCommandes: RecentOrderItem[];
+}
+

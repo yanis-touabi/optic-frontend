@@ -9,7 +9,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
-import { useClients, useOrdonnances, useStore } from '@/lib/data';
+import { useClients, useOrdonnance, useStore } from '@/lib/data';
 import {
   OrdonnanceClassique,
   OrdonnanceCompact,
@@ -28,10 +28,9 @@ import { toast } from 'sonner';
 export default function ImprimerOrdonnance() {
   const { id } = useParams();
   const nav = useNavigate();
-  const { data: ordonnances = [], isLoading } = useOrdonnances();
+  const { data: ord, isLoading } = useOrdonnance(id);
   const { data: clients = [] } = useClients();
   const { data: store } = useStore();
-  const ord = ordonnances.find((o) => o.id === id);
   const [tpl, setTpl] = useState<OrdonnanceTemplate>(getOrdonnanceTemplate());
   const [zoom, setZoom] = useState(1);
   const [downloading, setDownloading] = useState(false);

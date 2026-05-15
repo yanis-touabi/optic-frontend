@@ -26,9 +26,9 @@ import { formatDZD } from '@/lib/format';
 import {
   useClients,
   useCommande,
-  useOrdonnances,
   useProduits,
   useUpdateCommande,
+  useOrdonnances,
 } from '@/lib/data';
 import type { LigneCommande, Produit } from '@/lib/types';
 import { checkStock } from '@/lib/stock-validation';
@@ -41,7 +41,6 @@ export default function EditerBon() {
   const { data: cmd, isLoading } = useCommande(id);
   const { data: clients = [] } = useClients();
   const { data: produits = [] } = useProduits();
-  const { data: ordonnances = [] } = useOrdonnances();
   const updateMut = useUpdateCommande();
 
   const [clientId, setClientId] = useState('');
@@ -68,7 +67,9 @@ export default function EditerBon() {
     setDateLivraison(cmd.dateLivraisonPrevue ?? '');
   }, [cmd]);
 
-  const ordonnancesClient = ordonnances.filter((o) => o.clientId === clientId);
+  const { data: ordonnancesClient = [] } = useOrdonnances({
+    clientId: clientId || undefined,
+  });
   const total = useMemo(
     () => lignes.reduce((s, l) => s + l.quantite * l.prixUnitaire, 0),
     [lignes],

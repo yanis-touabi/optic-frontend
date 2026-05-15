@@ -4,6 +4,7 @@ import type {
   Client,
   Commande,
   CommandeStatut,
+  DashboardStatistics,
   LigneCommande,
   Ordonnance,
   Produit,
@@ -164,17 +165,31 @@ export const useDeleteProduit = () => {
 
 const ORDONNANCES_KEY = ['ordonnances'] as const;
 
-export const useOrdonnances = () =>
+export const useOrdonnances = (params?: {
+  clientId?: string;
+  size?: number;
+  q?: string;
+}) =>
   useQuery({
-    queryKey: ORDONNANCES_KEY,
+    queryKey: [...ORDONNANCES_KEY, params],
     queryFn: async () => {
       const { data } = await apiClient.get<PaginatedResponse<Ordonnance>>(
         '/prescriptions',
         {
-          params: { size: FETCH_ALL_SIZE }, // Large size for dashboard
+          params: { size: FETCH_ALL_SIZE, ...params },
         },
       );
       return data.content;
+    },
+  });
+
+export const useOrdonnance = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['ordonnance', id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data } = await apiClient.get<Ordonnance>(`/prescriptions/${id}`);
+      return data;
     },
   });
 
@@ -387,6 +402,20 @@ export const useDeleteCommande = () => {
     },
   });
 };
+
+// ==================== DASHBOARD STATISTICS ====================
+
+export const useDashboard = (period: string = '30d') =>
+  useQuery({
+    queryKey: ['dashboard', period],
+    queryFn: async () => {
+      const { data } =
+        await apiClient.get<DashboardStatistics>('/statistics/dashboard', {
+          params: { period },
+        });
+      return data;
+    },
+  });
 
 // ==================== STORE ====================
 

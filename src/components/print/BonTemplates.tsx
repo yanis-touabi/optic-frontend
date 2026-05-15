@@ -207,7 +207,7 @@ const ItemsTable = ({
   </table>
 );
 
-export function BonClassique({ cmd, client, ord }: Props) {
+export function BonClassique({ cmd, client, ord, store }: Props) {
   return (
     <div className="font-sans text-[13px] text-black">
       <div className="flex justify-between items-start mb-6 border-b-2 border-black pb-4">
