@@ -24,12 +24,12 @@ import {
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { formatDZD } from '@/lib/format';
 import {
-  useClients,
   useCommande,
   useProduits,
   useUpdateCommande,
-  useOrdonnances,
 } from '@/lib/data';
+import { ClientSelect } from '@/components/ClientSelect';
+import { OrdonnanceSelect } from '@/components/OrdonnanceSelect';
 import type { LigneCommande, Produit } from '@/lib/types';
 import { checkStock } from '@/lib/stock-validation';
 import { StockAlert } from '@/components/StockAlert';
@@ -39,7 +39,6 @@ export default function EditerBon() {
   const { id } = useParams();
   const nav = useNavigate();
   const { data: cmd, isLoading } = useCommande(id);
-  const { data: clients = [] } = useClients();
   const { data: produits = [] } = useProduits();
   const updateMut = useUpdateCommande();
 
@@ -67,9 +66,8 @@ export default function EditerBon() {
     setDateLivraison(cmd.dateLivraisonPrevue ?? '');
   }, [cmd]);
 
-  const { data: ordonnancesClient = [] } = useOrdonnances({
-    clientId: clientId || undefined,
-  });
+  // Removed ordonnancesClient query
+
   const total = useMemo(
     () => lignes.reduce((s, l) => s + l.quantite * l.prixUnitaire, 0),
     [lignes],
@@ -219,37 +217,17 @@ export default function EditerBon() {
               <CardTitle className="text-base">Client & ordonnance</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="flex flex-col gap-1.5">
                 <Label>Client *</Label>
-                <Select value={clientId} onValueChange={setClientId}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.prenom} {c.nom}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ClientSelect value={clientId} onChange={setClientId} />
               </div>
-              <div>
+              <div className="flex flex-col gap-1.5">
                 <Label>Ordonnance</Label>
-                <Select value={ordonnanceId} onValueChange={setOrdonnanceId}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Aucune</SelectItem>
-                    {ordonnancesClient.map((o) => (
-                      <SelectItem key={o.id} value={o.id}>
-                        {o.nomMedecin || 'Sans médecin'} — OD{' '}
-                        {o.odSphere ?? '—'} / OG {o.ogSphere ?? '—'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <OrdonnanceSelect 
+                  clientId={clientId} 
+                  value={ordonnanceId} 
+                  onChange={setOrdonnanceId} 
+                />
               </div>
               <div>
                 <Label>Date de livraison prévue</Label>

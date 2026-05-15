@@ -41,9 +41,9 @@ import {
   useCreateOrdonnance,
   useUpdateOrdonnance,
   useDeleteOrdonnance,
-  useClients,
   DEFAULT_PAGE_SIZE,
 } from '@/lib/data';
+import { ClientSelect } from '@/components/ClientSelect';
 import { useDebounce } from '@/hooks/use-debounce';
 import type { Ordonnance } from '@/lib/types';
 import { toast } from 'sonner';
@@ -71,8 +71,7 @@ export default function Ordonnances() {
     q: debouncedSearch, 
   });
 
-  // Fetch clients for the Select dropdown in the "New/Edit" dialog.
-  const { data: clientOptions = [] } = useClients();
+  // Removed useClients hook since ClientSelect handles its own fetching.
 
   const createMut = useCreateOrdonnance();
   const updateMut = useUpdateOrdonnance();
@@ -88,7 +87,7 @@ export default function Ordonnances() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ ...empty, clientId: clientOptions[0]?.id ?? '' });
+    setForm({ ...empty, clientId: '' });
     setOpen(true);
   };
   const openEdit = (o: Ordonnance) => {
@@ -351,23 +350,12 @@ export default function Ordonnances() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
-              <div className="col-span-2">
+              <div className="col-span-2 flex flex-col gap-1.5">
                 <Label>Client *</Label>
-                <Select
+                <ClientSelect
                   value={form.clientId}
-                  onValueChange={(v) => set('clientId', v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clientOptions.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.prenom} {c.nom}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onChange={(v) => set('clientId', v)}
+                />
               </div>
               <div>
                 <Label>Nom du médecin</Label>

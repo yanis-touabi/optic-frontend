@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/apiClient';
 import type {
   Client,
@@ -46,6 +46,31 @@ export const usePaginatedClients = (params: {
   useQuery({
     queryKey: ['clients', params],
     queryFn: async () => fetchPaginated<Client>('/clients', params),
+  });
+
+export const useClient = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['client', id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data } = await apiClient.get<Client>(`/clients/${id}`);
+      return data;
+    },
+  });
+
+export const useInfiniteClients = (q?: string) =>
+  useInfiniteQuery({
+    queryKey: ['clients', 'infinite', q],
+    initialPageParam: 0,
+    queryFn: async ({ pageParam = 0 }) => {
+      const params: any = { page: pageParam, size: DEFAULT_PAGE_SIZE };
+      if (q) params.q = q;
+      return fetchPaginated<Client>('/clients', params);
+    },
+    getNextPageParam: (lastPage) => {
+      if (lastPage.last) return undefined;
+      return lastPage.page + 1;
+    },
   });
 
 export const useCreateClient = () => {
@@ -183,6 +208,22 @@ export const useOrdonnance = (id: string | undefined) =>
     queryFn: async () => {
       const { data } = await apiClient.get<Ordonnance>(`/prescriptions/${id}`);
       return data;
+    },
+  });
+
+export const useInfiniteOrdonnances = (clientId?: string, q?: string) =>
+  useInfiniteQuery({
+    queryKey: ['ordonnances', 'infinite', clientId, q],
+    initialPageParam: 0,
+    queryFn: async ({ pageParam = 0 }) => {
+      const params: any = { page: pageParam, size: DEFAULT_PAGE_SIZE };
+      if (clientId) params.clientId = clientId;
+      if (q) params.q = q;
+      return fetchPaginated<Ordonnance>('/prescriptions', params);
+    },
+    getNextPageParam: (lastPage) => {
+      if (lastPage.last) return undefined;
+      return lastPage.page + 1;
     },
   });
 
