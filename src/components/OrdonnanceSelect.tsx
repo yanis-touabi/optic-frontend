@@ -65,7 +65,7 @@ export function OrdonnanceSelect({ clientId, value, onChange, disabled }: Ordonn
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={true}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"

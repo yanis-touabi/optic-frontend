@@ -61,7 +61,7 @@ export function ClientSelect({ value, onChange, disabled }: ClientSelectProps) {
     : null;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={true}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
