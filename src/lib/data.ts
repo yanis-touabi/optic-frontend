@@ -21,7 +21,6 @@ const fetchPaginated = async <T>(
 };
 
 export const DEFAULT_PAGE_SIZE = 10;
-export const FETCH_ALL_SIZE = 10000; // Used to fetch all records for client-side search
 
 // ==================== CLIENTS ====================
 
@@ -33,9 +32,6 @@ export const useClients = () =>
     queryFn: async () => {
       const { data } = await apiClient.get<PaginatedResponse<Client>>(
         '/clients',
-        {
-          params: { size: FETCH_ALL_SIZE }, // Large size for dashboard
-        },
       );
       return data.content;
     },
@@ -104,9 +100,6 @@ export const useProduits = () =>
     queryFn: async () => {
       const { data } = await apiClient.get<PaginatedResponse<Produit>>(
         '/products',
-        {
-          params: { size: FETCH_ALL_SIZE }, // Large size for dashboard
-        },
       );
       return data.content;
     },
@@ -176,7 +169,7 @@ export const useOrdonnances = (params?: {
       const { data } = await apiClient.get<PaginatedResponse<Ordonnance>>(
         '/prescriptions',
         {
-          params: { size: FETCH_ALL_SIZE, ...params },
+          params,
         },
       );
       return data.content;
@@ -258,9 +251,6 @@ export const useCommandes = () =>
     queryFn: async () => {
       const { data } = await apiClient.get<PaginatedResponse<Commande>>(
         '/orders',
-        {
-          params: { size: FETCH_ALL_SIZE }, // Large size for dashboard
-        },
       );
       return data.content;
     },

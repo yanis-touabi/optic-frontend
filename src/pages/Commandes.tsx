@@ -136,7 +136,7 @@ export default function Commandes() {
     exportToCSV(
       commandes.map((c) => ({
         ...c,
-        clientName: clients.find((cl) => cl.id === c.clientId)?.nom || '—',
+        clientName: c.client ? `${c.client.prenom} ${c.client.nom}` : '—',
         formattedDate: formatDateTime(c.createdAt),
         statutLabel: statutLabel[c.statut],
       })),
@@ -355,7 +355,7 @@ export default function Commandes() {
                   </TableRow>
                 ) : (
                   commandes.map((c) => {
-                    const cl = clients.find((x) => x.id === c.clientId);
+                    const cl = c.client;
                     return (
                       <TableRow key={c.id}>
                         <TableCell className="font-mono font-medium">

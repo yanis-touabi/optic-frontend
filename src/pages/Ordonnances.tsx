@@ -43,7 +43,6 @@ import {
   useDeleteOrdonnance,
   useClients,
   DEFAULT_PAGE_SIZE,
-  FETCH_ALL_SIZE,
 } from '@/lib/data';
 import { useDebounce } from '@/hooks/use-debounce';
 import type { Ordonnance } from '@/lib/types';

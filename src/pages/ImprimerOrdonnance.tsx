@@ -9,7 +9,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
-import { useClients, useOrdonnance, useStore } from '@/lib/data';
+import { useOrdonnance, useStore } from '@/lib/data';
 import {
   OrdonnanceClassique,
   OrdonnanceCompact,
@@ -29,7 +29,6 @@ export default function ImprimerOrdonnance() {
   const { id } = useParams();
   const nav = useNavigate();
   const { data: ord, isLoading } = useOrdonnance(id);
-  const { data: clients = [] } = useClients();
   const { data: store } = useStore();
   const [tpl, setTpl] = useState<OrdonnanceTemplate>(getOrdonnanceTemplate());
   const [zoom, setZoom] = useState(1);
@@ -58,7 +57,7 @@ export default function ImprimerOrdonnance() {
     );
   }
 
-  const client = clients.find((c) => c.id === ord.clientId);
+  const client = ord.client;
   const onTpl = (v: string) => {
     setTpl(v as OrdonnanceTemplate);
     setOrdonnanceTemplate(v as OrdonnanceTemplate);
