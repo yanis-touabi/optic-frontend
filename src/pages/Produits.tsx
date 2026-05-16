@@ -48,6 +48,8 @@ import {
 import { useDebounce } from '@/hooks/use-debounce';
 import type { Produit, ProduitCategorie } from '@/lib/types';
 import { toast } from 'sonner';
+import { useSortableTable } from '@/hooks/use-sortable-table';
+import { SortableTableHead } from '@/components/SortableTableHead';
 
 const empty: Omit<Produit, 'id' | 'createdAt'> = {
   nom: '',
@@ -71,10 +73,14 @@ export default function Produits() {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const debouncedSearch = useDebounce(q, 300);
 
+  const { sort, order, onSort, directionFor } = useSortableTable('nom', 'asc');
+
   const { data, isLoading } = usePaginatedProduits({
     page,
     size: pageSize,
     q: debouncedSearch,
+    sort,
+    order,
   });
 
   const createMut = useCreateProduit();
@@ -224,11 +230,11 @@ export default function Produits() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Marque / Modèle</TableHead>
+                  <SortableTableHead field="nom" type="text" direction={directionFor('nom')} onSort={onSort}>Nom</SortableTableHead>
+                  <SortableTableHead field="marque" type="text" direction={directionFor('marque')} onSort={onSort}>Marque / Modèle</SortableTableHead>
                   <TableHead>Catégorie</TableHead>
-                  <TableHead className="text-right">Prix</TableHead>
-                  <TableHead className="text-right">Stock</TableHead>
+                  <SortableTableHead field="prix" type="number" direction={directionFor('prix')} onSort={onSort} className="text-right">Prix</SortableTableHead>
+                  <SortableTableHead field="stock" type="number" direction={directionFor('stock')} onSort={onSort} className="text-right">Stock</SortableTableHead>
                   <TableHead className="w-24"></TableHead>
                 </TableRow>
               </TableHeader>

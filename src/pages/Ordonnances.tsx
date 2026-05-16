@@ -48,6 +48,8 @@ import { useDebounce } from '@/hooks/use-debounce';
 import type { Ordonnance } from '@/lib/types';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useSortableTable } from '@/hooks/use-sortable-table';
+import { SortableTableHead } from '@/components/SortableTableHead';
 
 type Form = Omit<Ordonnance, 'id' | 'createdAt' | 'client'>;
 
@@ -65,10 +67,14 @@ export default function Ordonnances() {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const debouncedSearch = useDebounce(q, 300);
 
+  const { sort, order, onSort, directionFor } = useSortableTable('datePrescription', 'desc');
+
   const { data, isLoading } = usePaginatedOrdonnances({
     page,
     size: pageSize,
     q: debouncedSearch, 
+    sort,
+    order,
   });
 
   // Removed useClients hook since ClientSelect handles its own fetching.
@@ -229,8 +235,8 @@ export default function Ordonnances() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Client</TableHead>
-                  <TableHead>Médecin</TableHead>
-                  <TableHead>Date prescription</TableHead>
+                  <SortableTableHead field="nomMedecin" type="text" direction={directionFor('nomMedecin')} onSort={onSort}>Médecin</SortableTableHead>
+                  <SortableTableHead field="datePrescription" type="date" direction={directionFor('datePrescription')} onSort={onSort}>Date prescription</SortableTableHead>
                   <TableHead>OD (Sph/Cyl/Axe)</TableHead>
                   <TableHead>OG (Sph/Cyl/Axe)</TableHead>
                   <TableHead className="w-32"></TableHead>

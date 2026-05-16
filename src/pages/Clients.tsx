@@ -46,6 +46,8 @@ import {
 } from '@/lib/data';
 import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from 'sonner';
+import { useSortableTable } from '@/hooks/use-sortable-table';
+import { SortableTableHead } from '@/components/SortableTableHead';
 
 const empty: Omit<Client, 'id' | 'createdAt'> = {
   nom: '',
@@ -63,10 +65,14 @@ export default function Clients() {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const debouncedSearch = useDebounce(q, 300);
 
+  const { sort, order, onSort, directionFor } = useSortableTable('createdAt', 'desc');
+
   const { data, isLoading } = usePaginatedClients({
     page,
     size: pageSize,
     q: debouncedSearch,
+    sort,
+    order,
   });
 
   const createMut = useCreateClient();
@@ -220,9 +226,9 @@ export default function Clients() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nom</TableHead>
+                  <SortableTableHead field="nom" type="text" direction={directionFor('nom')} onSort={onSort}>Nom</SortableTableHead>
                   <TableHead>Téléphone</TableHead>
-                  <TableHead>Email</TableHead>
+                  <SortableTableHead field="email" type="text" direction={directionFor('email')} onSort={onSort}>Email</SortableTableHead>
                   <TableHead>Adresse</TableHead>
                   <TableHead className="w-24"></TableHead>
                 </TableRow>

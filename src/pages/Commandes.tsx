@@ -64,6 +64,8 @@ import {
 import { useDebounce } from '@/hooks/use-debounce';
 import type { CommandeStatut } from '@/lib/types';
 import { toast } from 'sonner';
+import { useSortableTable } from '@/hooks/use-sortable-table';
+import { SortableTableHead } from '@/components/SortableTableHead';
 
 const statutColors: Record<CommandeStatut, string> = {
   EN_ATTENTE: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800',
@@ -88,6 +90,8 @@ export default function Commandes() {
 
   const debouncedQ = useDebounce(q, 300);
 
+  const { sort, order, onSort, directionFor } = useSortableTable('createdAt', 'desc');
+
   // ✅ Server-side filtering & pagination — no more fetching 10,000 records
   const { data, isLoading } = usePaginatedCommandes({
     page,
@@ -97,6 +101,8 @@ export default function Commandes() {
     clientId: clientId === 'ALL' ? undefined : clientId,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
+    sort,
+    order,
   });
 
   const commandes = data?.content ?? [];
@@ -329,11 +335,11 @@ export default function Commandes() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>N°</TableHead>
+                  <SortableTableHead field="numero" type="number" direction={directionFor('numero')} onSort={onSort}>N°</SortableTableHead>
                   <TableHead>Client</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="text-right">Montant</TableHead>
+                  <SortableTableHead field="createdAt" type="date" direction={directionFor('createdAt')} onSort={onSort}>Date</SortableTableHead>
+                  <SortableTableHead field="statut" type="text" direction={directionFor('statut')} onSort={onSort}>Statut</SortableTableHead>
+                  <SortableTableHead field="montantTotal" type="number" direction={directionFor('montantTotal')} onSort={onSort} className="text-right">Montant</SortableTableHead>
                   <TableHead className="w-40"></TableHead>
                 </TableRow>
               </TableHeader>

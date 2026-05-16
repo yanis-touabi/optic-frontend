@@ -42,6 +42,7 @@ export const usePaginatedClients = (params: {
   size: number;
   q?: string;
   sort?: string;
+  order?: 'asc' | 'desc';
 }) =>
   useQuery({
     queryKey: ['clients', params],
@@ -135,6 +136,7 @@ export const usePaginatedProduits = (params: {
   size: number;
   q?: string;
   sort?: string;
+  order?: 'asc' | 'desc';
 }) =>
   useQuery({
     queryKey: ['produits', params],
@@ -232,6 +234,7 @@ export const usePaginatedOrdonnances = (params: {
   size: number;
   q?: string;
   sort?: string;
+  order?: 'asc' | 'desc';
 }) =>
   useQuery({
     queryKey: ['ordonnances', params],
@@ -306,6 +309,7 @@ export const usePaginatedCommandes = (params: {
   dateFrom?: string;
   dateTo?: string;
   sort?: string;
+  order?: 'asc' | 'desc';
 }) =>
   useQuery({
     queryKey: ['commandes', params],
