@@ -16,6 +16,7 @@ import {
   Minus,
   Medal,
   AlertCircle,
+  SlidersHorizontal,
 } from 'lucide-react';
 import {
   BarChart,
@@ -29,10 +30,10 @@ import {
   Cell,
 } from 'recharts';
 import { formatDZD, formatDateTime, statutLabel } from '@/lib/format';
-import { useDashboard } from '@/lib/data';
+import { useDashboard, type CaChartOptions } from '@/lib/data';
 import { PageHeader } from '@/components/PageHeader';
 import { useState, useMemo } from 'react';
-import type { DashboardStatistics, RecentOrderItem } from '@/lib/types';
+import type { DashboardStatistics, MonthlyCaItem, RecentOrderItem } from '@/lib/types';
 
 // ── Period filter ──
 type Period = '7d' | '30d' | '90d' | 'all';
@@ -43,6 +44,217 @@ const PERIOD_OPTIONS: { value: Period; label: string }[] = [
   { value: '90d', label: '90 derniers jours' },
   { value: 'all', label: 'Tout' },
 ];
+
+// ── CA chart types ──
+type CaPreset = 'semaine' | 'mois6' | 'trimestre' | 'annee' | 'custom';
+type CaGranularity = 'day' | 'week' | 'month';
+
+const CA_PRESETS: { value: CaPreset; label: string }[] = [
+  { value: 'semaine', label: 'Semaine' },
+  { value: 'mois6', label: '6 mois' },
+  { value: 'trimestre', label: 'Trimestre' },
+  { value: 'annee', label: 'Année' },
+  { value: 'custom', label: 'Personnalisé' },
+];
+
+const CA_GRANULARITIES: { value: CaGranularity; label: string }[] = [
+  { value: 'day', label: 'Jour' },
+  { value: 'week', label: 'Semaine' },
+  { value: 'month', label: 'Mois' },
+];
+
+/** Returns today as YYYY-MM-DD */
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** Returns a date N days before today as YYYY-MM-DD */
+function daysAgo(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Returns first day of month N months ago as YYYY-MM-DD */
+function monthsAgo(n: number): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() - n, 1);
+  return d.toISOString().slice(0, 10);
+}
+
+// ── CaChartCard ──────────────────────────────────────────────────────────────
+interface CaChartCardProps {
+  caMensuel: MonthlyCaItem[];
+  preset: CaPreset;
+  granularity: CaGranularity;
+  dateFrom: string;
+  dateTo: string;
+  onPresetChange: (p: CaPreset) => void;
+  onGranularityChange: (g: CaGranularity) => void;
+  onDateFromChange: (v: string) => void;
+  onDateToChange: (v: string) => void;
+}
+
+function CaChartCard({
+  caMensuel,
+  preset,
+  granularity,
+  dateFrom,
+  dateTo,
+  onPresetChange,
+  onGranularityChange,
+  onDateFromChange,
+  onDateToChange,
+}: CaChartCardProps) {
+  // Threshold: beyond 8 bars we enable horizontal scroll
+  const needsScroll = caMensuel.length > 8;
+  const BAR_MIN_WIDTH = 52; // px per bar when scrolling
+  const chartMinWidth = needsScroll ? caMensuel.length * BAR_MIN_WIDTH : undefined;
+
+  const pillBase =
+    'px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer border';
+  const pillActive = 'bg-primary text-primary-foreground border-primary shadow-sm';
+  const pillInactive =
+    'bg-background text-muted-foreground border-transparent hover:border-border hover:text-foreground';
+
+  return (
+    <Card className="lg:col-span-2 shadow-[var(--shadow-card)]">
+      <CardHeader className="pb-3">
+        {/* Title row */}
+        <div className="flex items-start justify-between gap-2 flex-wrap">
+          <CardTitle className="text-base">Chiffre d'affaires</CardTitle>
+          {/* Preset pills */}
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-1 flex-wrap">
+            {CA_PRESETS.map((p) => (
+              <button
+                key={p.value}
+                onClick={() => onPresetChange(p.value)}
+                className={`${pillBase} ${
+                  preset === p.value ? pillActive : pillInactive
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Controls row */}
+        <div className="flex items-center gap-3 flex-wrap mt-2">
+          {/* Granularity */}
+          <div className="flex items-center gap-1.5">
+            <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+            <span className="text-xs text-muted-foreground font-medium">Granularité :</span>
+            <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5">
+              {CA_GRANULARITIES.map((g) => (
+                <button
+                  key={g.value}
+                  onClick={() => onGranularityChange(g.value)}
+                  className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                    granularity === g.value
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Custom date range */}
+          {preset === 'custom' && (
+            <div className="flex items-center gap-2 ml-auto">
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => onDateFromChange(e.target.value)}
+                className="h-7 px-2 text-xs rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+              <span className="text-xs text-muted-foreground">→</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => onDateToChange(e.target.value)}
+                className="h-7 px-2 text-xs rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+          )}
+
+          {/* Data point count badge */}
+          {caMensuel.length > 0 && (
+            <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+              {caMensuel.length} période{caMensuel.length > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+      </CardHeader>
+
+      <CardContent className="pt-0">
+        {caMensuel.length === 0 ? (
+          <div className="h-[220px] flex items-center justify-center text-sm text-muted-foreground">
+            Aucune donnée sur cette période.
+          </div>
+        ) : (
+          <div
+            style={{
+              overflowX: needsScroll ? 'auto' : 'visible',
+              WebkitOverflowScrolling: 'touch',
+            }}
+            className="rounded-md"
+          >
+            <div style={{ minWidth: chartMinWidth }}>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart
+                  data={caMensuel}
+                  barSize={needsScroll ? 36 : Math.max(18, Math.floor(560 / caMensuel.length) - 8)}
+                  margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+                >
+                  <XAxis
+                    dataKey="mois"
+                    tick={{ fontSize: needsScroll ? 11 : 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                    interval={0}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                    width={38}
+                  />
+                  <Tooltip
+                    formatter={(v: number) => [formatDZD(v), 'CA']}
+                    contentStyle={{
+                      borderRadius: 8,
+                      fontSize: 12,
+                      border: '1px solid hsl(var(--border))',
+                    }}
+                    cursor={{ fill: 'hsl(var(--muted))', opacity: 0.6 }}
+                  />
+                  <Bar dataKey="ca" radius={[6, 6, 0, 0]}>
+                    {caMensuel.map((_, i) => (
+                      <Cell
+                        key={i}
+                        fill={
+                          i === caMensuel.length - 1
+                            ? 'hsl(var(--primary))'
+                            : 'hsl(var(--accent))'
+                        }
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 const STATUT_COLORS: Record<string, string> = {
   EN_ATTENTE: '#0284c7',
@@ -138,7 +350,31 @@ function KpiTrend({ kpi }: { kpi: { value: number; previousValue: number } }) {
 export default function Dashboard() {
   const [period, setPeriod] = useState<Period>('30d');
 
-  const { data: stats, isLoading } = useDashboard(period);
+  // ── CA chart state ──
+  const [caPreset, setCaPreset] = useState<CaPreset>('mois6');
+  const [caGranularity, setCaGranularity] = useState<CaGranularity>('month');
+  const [caDateFrom, setCaDateFrom] = useState<string>(() => daysAgo(6));
+  const [caDateTo, setCaDateTo] = useState<string>(() => today());
+
+  // Derive caOptions from the preset (or use raw dates in custom mode)
+  const caOptions = useMemo<CaChartOptions>(() => {
+    if (caPreset === 'semaine') return { dateFrom: daysAgo(6), dateTo: today(), granularity: caGranularity };
+    if (caPreset === 'trimestre') return { dateFrom: daysAgo(89), dateTo: today(), granularity: caGranularity };
+    if (caPreset === 'annee') return { dateFrom: monthsAgo(11), dateTo: today(), granularity: caGranularity };
+    if (caPreset === 'custom') return { dateFrom: caDateFrom || undefined, dateTo: caDateTo || undefined, granularity: caGranularity };
+    // mois6 (default) — let the backend use its own default
+    return { granularity: caGranularity };
+  }, [caPreset, caGranularity, caDateFrom, caDateTo]);
+
+  const handlePresetChange = (p: CaPreset) => {
+    setCaPreset(p);
+    // Auto-select sensible granularity per preset
+    if (p === 'semaine') setCaGranularity('day');
+    else if (p === 'trimestre') setCaGranularity('week');
+    else setCaGranularity('month');
+  };
+
+  const { data: stats, isLoading } = useDashboard(period, caOptions);
 
   const showTrend = period !== 'all';
 
@@ -291,61 +527,18 @@ export default function Dashboard() {
 
             {/* ── CHARTS ROW ── */}
             <div className="grid gap-4 lg:grid-cols-3">
-              {/* Bar chart — CA mensuel */}
-              <Card className="lg:col-span-2 shadow-[var(--shadow-card)]">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">
-                      Chiffre d'affaires mensuel
-                    </CardTitle>
-                    <span className="text-xs text-muted-foreground">
-                      6 derniers mois
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart
-                      data={caMensuel}
-                      barSize={36}
-                      margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
-                    >
-                      <XAxis
-                        dataKey="mois"
-                        tick={{ fontSize: 12 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 11 }}
-                        axisLine={false}
-                        tickLine={false}
-                        tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-                      />
-                      <Tooltip
-                        formatter={(v: number) => [formatDZD(v), 'CA']}
-                        contentStyle={{
-                          borderRadius: 8,
-                          fontSize: 12,
-                          border: '1px solid hsl(var(--border))',
-                        }}
-                      />
-                      <Bar dataKey="ca" radius={[6, 6, 0, 0]}>
-                        {caMensuel.map((_, i) => (
-                          <Cell
-                            key={i}
-                            fill={
-                              i === caMensuel.length - 1
-                                ? 'hsl(var(--primary))'
-                                : 'hsl(var(--accent))'
-                            }
-                          />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+              {/* Bar chart — CA (dynamic) */}
+              <CaChartCard
+                caMensuel={caMensuel}
+                preset={caPreset}
+                granularity={caGranularity}
+                dateFrom={caDateFrom}
+                dateTo={caDateTo}
+                onPresetChange={handlePresetChange}
+                onGranularityChange={setCaGranularity}
+                onDateFromChange={setCaDateFrom}
+                onDateToChange={setCaDateTo}
+              />
 
               {/* Donut — statut commandes */}
               <Card className="shadow-[var(--shadow-card)]">

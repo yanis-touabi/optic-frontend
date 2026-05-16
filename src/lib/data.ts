@@ -436,17 +436,28 @@ export const useDeleteCommande = () => {
 
 // ==================== DASHBOARD STATISTICS ====================
 
-export const useDashboard = (period: string = '30d') =>
+export interface CaChartOptions {
+  dateFrom?: string;
+  dateTo?: string;
+  granularity?: 'day' | 'week' | 'month';
+}
+
+export const useDashboard = (period: string = '30d', caOptions?: CaChartOptions) =>
   useQuery({
-    queryKey: ['dashboard', period],
+    queryKey: ['dashboard', period, caOptions],
     queryFn: async () => {
+      const params: Record<string, string> = { period };
+      if (caOptions?.dateFrom) params.caDateFrom = caOptions.dateFrom;
+      if (caOptions?.dateTo) params.caDateTo = caOptions.dateTo;
+      if (caOptions?.granularity) params.caGranularity = caOptions.granularity;
       const { data } =
         await apiClient.get<DashboardStatistics>('/statistics/dashboard', {
-          params: { period },
+          params,
         });
       return data;
     },
   });
+
 
 // ==================== STORE ====================
 
