@@ -32,6 +32,10 @@ apiClient.interceptors.response.use(
         }
       }
     }
+    if (error.response?.data?.message) {
+      const msg = error.response.data.message;
+      error.message = Array.isArray(msg) ? msg.join(', ') : msg;
+    }
     return Promise.reject(error);
   },
 );

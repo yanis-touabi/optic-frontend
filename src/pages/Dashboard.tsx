@@ -96,13 +96,7 @@ const RANK_META = [
 ];
 
 // ── Trend badge ──
-function Trend({
-  current,
-  previous,
-}: {
-  current: number;
-  previous: number;
-}) {
+function Trend({ current, previous }: { current: number; previous: number }) {
   if (previous === 0 && current === 0) return null;
   if (previous === 0) {
     return (
@@ -164,21 +158,23 @@ export default function Dashboard() {
         label: 'Clients',
         kpi: stats.clients,
         icon: Users,
-        iconBg: 'bg-success/10',
-        iconColor: 'text-success',
+        // iconBg: 'bg-success/10',
+        iconBg: 'bg-accent',
+        // iconColor: 'text-success',
+        iconColor: 'text-primary',
       },
       {
         label: 'Produits',
         kpi: stats.produits,
         icon: Glasses,
-        iconBg: 'bg-warning/10',
-        iconColor: 'text-warning',
+        iconBg: 'bg-accent',
+        iconColor: 'text-primary',
       },
       {
         label: 'Ordonnances',
         kpi: stats.ordonnances,
         icon: FileText,
-        iconBg: 'bg-primary/10',
+        iconBg: 'bg-accent',
         iconColor: 'text-primary',
       },
     ];
@@ -191,8 +187,7 @@ export default function Dashboard() {
   const caMensuel = stats?.caMensuel ?? [];
   const statusBreakdown = stats?.statusBreakdown ?? [];
   const top5Produits = stats?.top5Produits ?? [];
-  const dernieresCommandes: RecentOrderItem[] =
-    stats?.dernieresCommandes ?? [];
+  const dernieresCommandes: RecentOrderItem[] = stats?.dernieresCommandes ?? [];
 
   const maxQte = top5Produits[0]?.qte ?? 1;
 
@@ -242,9 +237,7 @@ export default function Dashboard() {
         ) : !stats ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
             <AlertCircle className="h-8 w-8" />
-            <p className="text-sm">
-              Impossible de charger les statistiques.
-            </p>
+            <p className="text-sm">Impossible de charger les statistiques.</p>
           </div>
         ) : (
           <>
@@ -382,9 +375,7 @@ export default function Dashboard() {
                           {statusBreakdown.map((entry) => (
                             <Cell
                               key={entry.name}
-                              fill={
-                                STATUT_COLORS[entry.name] ?? '#888'
-                              }
+                              fill={STATUT_COLORS[entry.name] ?? '#888'}
                             />
                           ))}
                         </Pie>
@@ -493,10 +484,7 @@ export default function Dashboard() {
                         </div>
                         {showTrend && (
                           <div className="mb-0.5">
-                            <Trend
-                              current={totalCA}
-                              previous={prevTotalCA}
-                            />
+                            <Trend current={totalCA} previous={prevTotalCA} />
                           </div>
                         )}
                       </div>
@@ -511,10 +499,7 @@ export default function Dashboard() {
                         </div>
                         {showTrend && (
                           <div className="mb-0.5">
-                            <Trend
-                              current={enCours}
-                              previous={prevEnCours}
-                            />
+                            <Trend current={enCours} previous={prevEnCours} />
                           </div>
                         )}
                       </div>
@@ -542,9 +527,7 @@ export default function Dashboard() {
                         {top5Produits.map((p, i) => {
                           const meta = RANK_META[i] ?? RANK_META[4];
                           const barPct =
-                            maxQte > 0
-                              ? Math.round((p.qte / maxQte) * 100)
-                              : 0;
+                            maxQte > 0 ? Math.round((p.qte / maxQte) * 100) : 0;
                           return (
                             <div key={p.id} className="flex items-center gap-3">
                               {/* Rank badge */}
