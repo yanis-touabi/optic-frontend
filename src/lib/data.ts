@@ -446,18 +446,29 @@ export interface CaChartOptions {
   granularity?: 'day' | 'week' | 'month';
 }
 
-export const useDashboard = (period: string = '30d', caOptions?: CaChartOptions) =>
+export const useDashboard = (period: string = '30d') =>
   useQuery({
-    queryKey: ['dashboard', period, caOptions],
+    queryKey: ['dashboard', period],
     queryFn: async () => {
-      const params: Record<string, string> = { period };
+      const { data } =
+        await apiClient.get<DashboardStatistics>('/statistics/dashboard', {
+          params: { period },
+        });
+      return data;
+    },
+  });
+
+export const useCaChart = (caOptions?: CaChartOptions) =>
+  useQuery({
+    queryKey: ['caChart', caOptions],
+    queryFn: async () => {
+      const params: Record<string, string> = {};
       if (caOptions?.dateFrom) params.caDateFrom = caOptions.dateFrom;
       if (caOptions?.dateTo) params.caDateTo = caOptions.dateTo;
       if (caOptions?.granularity) params.caGranularity = caOptions.granularity;
-      const { data } =
-        await apiClient.get<DashboardStatistics>('/statistics/dashboard', {
-          params,
-        });
+      const { data } = await apiClient.get<MonthlyCaItem[]>('/statistics/ca', {
+        params,
+      });
       return data;
     },
   });

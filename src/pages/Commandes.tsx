@@ -337,9 +337,9 @@ export default function Commandes() {
                 <TableRow>
                   <SortableTableHead field="numero" type="number" direction={directionFor('numero')} onSort={onSort}>N°</SortableTableHead>
                   <TableHead>Client</TableHead>
-                  <SortableTableHead field="createdAt" type="date" direction={directionFor('createdAt')} onSort={onSort}>Date</SortableTableHead>
-                  <SortableTableHead field="statut" type="text" direction={directionFor('statut')} onSort={onSort}>Statut</SortableTableHead>
-                  <SortableTableHead field="montantTotal" type="number" direction={directionFor('montantTotal')} onSort={onSort} className="text-right">Montant</SortableTableHead>
+                  <SortableTableHead field="createdAt" type="date" direction={directionFor('createdAt')} onSort={onSort} className="text-center">Date</SortableTableHead>
+                  <SortableTableHead field="statut" type="text" direction={directionFor('statut')} onSort={onSort} className="text-center">Statut</SortableTableHead>
+                  <SortableTableHead field="montantTotal" type="number" direction={directionFor('montantTotal')} onSort={onSort} className="text-center">Montant</SortableTableHead>
                   <TableHead className="w-40"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -370,38 +370,40 @@ export default function Commandes() {
                         <TableCell>
                           {cl ? `${cl.prenom} ${cl.nom}` : '—'}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="text-center text-muted-foreground">
                           {formatDateTime(c.createdAt)}
                         </TableCell>
                         <TableCell>
-                          <Select
-                            value={c.statut}
-                            onValueChange={(v) =>
-                              changeStatut(c.id, v as CommandeStatut)
-                            }
-                          >
-                            <SelectTrigger
-                              className={`h-8 w-40 border ${statutColors[c.statut]}`}
+                          <div className="flex justify-center">
+                            <Select
+                              value={c.statut}
+                              onValueChange={(v) =>
+                                changeStatut(c.id, v as CommandeStatut)
+                              }
                             >
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {(
-                                [
-                                  'EN_ATTENTE',
-                                  'EN_TRAITEMENT',
-                                  'TERMINEE',
-                                  'ANNULEE',
-                                ] as CommandeStatut[]
-                              ).map((s) => (
-                                <SelectItem key={s} value={s}>
-                                  {statutLabel[s]}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                              <SelectTrigger
+                                className={`h-8 w-40 border ${statutColors[c.statut]}`}
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(
+                                  [
+                                    'EN_ATTENTE',
+                                    'EN_TRAITEMENT',
+                                    'TERMINEE',
+                                    'ANNULEE',
+                                  ] as CommandeStatut[]
+                                ).map((s) => (
+                                  <SelectItem key={s} value={s}>
+                                    {statutLabel[s]}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </TableCell>
-                        <TableCell className="text-right font-semibold">
+                        <TableCell className="text-center font-semibold">
                           {formatDZD(c.montantTotal)}
                         </TableCell>
                         <TableCell className="text-right">

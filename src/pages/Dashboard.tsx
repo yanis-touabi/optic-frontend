@@ -30,10 +30,14 @@ import {
   Cell,
 } from 'recharts';
 import { formatDZD, formatDateTime, statutLabel } from '@/lib/format';
-import { useDashboard, type CaChartOptions } from '@/lib/data';
+import { useDashboard, useCaChart, type CaChartOptions } from '@/lib/data';
 import { PageHeader } from '@/components/PageHeader';
 import { useState, useMemo } from 'react';
-import type { DashboardStatistics, MonthlyCaItem, RecentOrderItem } from '@/lib/types';
+import type {
+  DashboardStatistics,
+  MonthlyCaItem,
+  RecentOrderItem,
+} from '@/lib/types';
 
 // ── Period filter ──
 type Period = '7d' | '30d' | '90d' | 'all';
@@ -85,6 +89,7 @@ function monthsAgo(n: number): string {
 // ── CaChartCard ──────────────────────────────────────────────────────────────
 interface CaChartCardProps {
   caMensuel: MonthlyCaItem[];
+  isLoading?: boolean;
   preset: CaPreset;
   granularity: CaGranularity;
   dateFrom: string;
@@ -97,6 +102,7 @@ interface CaChartCardProps {
 
 function CaChartCard({
   caMensuel,
+  isLoading,
   preset,
   granularity,
   dateFrom,
@@ -109,11 +115,14 @@ function CaChartCard({
   // Threshold: beyond 8 bars we enable horizontal scroll
   const needsScroll = caMensuel.length > 8;
   const BAR_MIN_WIDTH = 52; // px per bar when scrolling
-  const chartMinWidth = needsScroll ? caMensuel.length * BAR_MIN_WIDTH : undefined;
+  const chartMinWidth = needsScroll
+    ? caMensuel.length * BAR_MIN_WIDTH
+    : undefined;
 
   const pillBase =
     'px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer border';
-  const pillActive = 'bg-primary text-primary-foreground border-primary shadow-sm';
+  const pillActive =
+    'bg-primary text-primary-foreground border-primary shadow-sm';
   const pillInactive =
     'bg-background text-muted-foreground border-transparent hover:border-border hover:text-foreground';
 
@@ -144,7 +153,9 @@ function CaChartCard({
           {/* Granularity */}
           <div className="flex items-center gap-1.5">
             <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-            <span className="text-xs text-muted-foreground font-medium">Granularité :</span>
+            <span className="text-xs text-muted-foreground font-medium">
+              Granularité :
+            </span>
             <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5">
               {CA_GRANULARITIES.map((g) => (
                 <button
@@ -183,7 +194,7 @@ function CaChartCard({
           )}
 
           {/* Data point count badge */}
-          {caMensuel.length > 0 && (
+          {caMensuel.length > 0 && !isLoading && (
             <span className="ml-auto text-xs text-muted-foreground tabular-nums">
               {caMensuel.length} période{caMensuel.length > 1 ? 's' : ''}
             </span>
@@ -192,7 +203,11 @@ function CaChartCard({
       </CardHeader>
 
       <CardContent className="pt-0">
-        {caMensuel.length === 0 ? (
+        {isLoading ? (
+          <div className="h-[220px] flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : caMensuel.length === 0 ? (
           <div className="h-[220px] flex items-center justify-center text-sm text-muted-foreground">
             Aucune donnée sur cette période.
           </div>
@@ -208,18 +223,22 @@ function CaChartCard({
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart
                   data={caMensuel}
-                  barSize={needsScroll ? 36 : Math.max(18, Math.floor(560 / caMensuel.length) - 8)}
+                  barSize={
+                    needsScroll
+                      ? 36
+                      : Math.max(18, Math.floor(560 / caMensuel.length) - 8)
+                  }
                   margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
                 >
                   <XAxis
                     dataKey="mois"
-                    tick={{ fontSize: needsScroll ? 11 : 12 }}
+                    tick={{ fontSize: needsScroll ? 11 : 12, fill: 'hsl(var(--muted-foreground))' }}
                     axisLine={false}
                     tickLine={false}
                     interval={0}
                   />
                   <YAxis
-                    tick={{ fontSize: 11 }}
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
@@ -228,11 +247,14 @@ function CaChartCard({
                   <Tooltip
                     formatter={(v: number) => [formatDZD(v), 'CA']}
                     contentStyle={{
-                      borderRadius: 8,
+                      borderRadius: 12,
                       fontSize: 12,
                       border: '1px solid hsl(var(--border))',
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      backdropFilter: 'blur(8px)',
+                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
                     }}
-                    cursor={{ fill: 'hsl(var(--muted))', opacity: 0.6 }}
+                    cursor={{ fill: 'hsl(var(--muted) / 0.5)', radius: [6, 6, 0, 0] }}
                   />
                   <Bar dataKey="ca" radius={[6, 6, 0, 0]}>
                     {caMensuel.map((_, i) => (
@@ -241,8 +263,9 @@ function CaChartCard({
                         fill={
                           i === caMensuel.length - 1
                             ? 'hsl(var(--primary))'
-                            : 'hsl(var(--accent))'
+                            : 'hsl(var(--primary) / 0.35)'
                         }
+                        className="transition-colors duration-200 hover:fill-[hsl(var(--primary)/0.8)] cursor-pointer"
                       />
                     ))}
                   </Bar>
@@ -257,20 +280,17 @@ function CaChartCard({
 }
 
 const STATUT_COLORS: Record<string, string> = {
-  EN_ATTENTE: '#0284c7',
-  EN_TRAITEMENT: '#d97706',
-  TERMINEE: '#16a34a',
-  ANNULEE: '#dc2626',
+  EN_ATTENTE: '#f97316', // orange-500
+  EN_TRAITEMENT: 'hsl(var(--primary))',
+  TERMINEE: '#22c55e', // green-500
+  ANNULEE: 'hsl(var(--destructive))',
 };
 
-const STATUT_BADGE: Record<
-  string,
-  'default' | 'secondary' | 'destructive' | 'outline'
-> = {
-  EN_ATTENTE: 'secondary',
-  EN_TRAITEMENT: 'outline',
-  TERMINEE: 'default',
-  ANNULEE: 'destructive',
+const STATUT_CLASSES: Record<string, string> = {
+  EN_ATTENTE: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800',
+  EN_TRAITEMENT: 'bg-primary/10 text-primary border-primary/20',
+  TERMINEE: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',
+  ANNULEE: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
 // ── Medal colors for top-5 podium ranks ──
@@ -358,10 +378,30 @@ export default function Dashboard() {
 
   // Derive caOptions from the preset (or use raw dates in custom mode)
   const caOptions = useMemo<CaChartOptions>(() => {
-    if (caPreset === 'semaine') return { dateFrom: daysAgo(6), dateTo: today(), granularity: caGranularity };
-    if (caPreset === 'trimestre') return { dateFrom: daysAgo(89), dateTo: today(), granularity: caGranularity };
-    if (caPreset === 'annee') return { dateFrom: monthsAgo(11), dateTo: today(), granularity: caGranularity };
-    if (caPreset === 'custom') return { dateFrom: caDateFrom || undefined, dateTo: caDateTo || undefined, granularity: caGranularity };
+    if (caPreset === 'semaine')
+      return {
+        dateFrom: daysAgo(6),
+        dateTo: today(),
+        granularity: caGranularity,
+      };
+    if (caPreset === 'trimestre')
+      return {
+        dateFrom: daysAgo(89),
+        dateTo: today(),
+        granularity: caGranularity,
+      };
+    if (caPreset === 'annee')
+      return {
+        dateFrom: monthsAgo(11),
+        dateTo: today(),
+        granularity: caGranularity,
+      };
+    if (caPreset === 'custom')
+      return {
+        dateFrom: caDateFrom || undefined,
+        dateTo: caDateTo || undefined,
+        granularity: caGranularity,
+      };
     // mois6 (default) — let the backend use its own default
     return { granularity: caGranularity };
   }, [caPreset, caGranularity, caDateFrom, caDateTo]);
@@ -374,7 +414,8 @@ export default function Dashboard() {
     else setCaGranularity('month');
   };
 
-  const { data: stats, isLoading } = useDashboard(period, caOptions);
+  const { data: stats, isLoading } = useDashboard(period);
+  const { data: caMensuel = [], isLoading: isCaLoading } = useCaChart(caOptions);
 
   const showTrend = period !== 'all';
 
@@ -420,7 +461,6 @@ export default function Dashboard() {
   const prevTotalCA = stats?.totalCA.previousValue ?? 0;
   const enCours = stats?.commandesEnCours.value ?? 0;
   const prevEnCours = stats?.commandesEnCours.previousValue ?? 0;
-  const caMensuel = stats?.caMensuel ?? [];
   const statusBreakdown = stats?.statusBreakdown ?? [];
   const top5Produits = stats?.top5Produits ?? [];
   const dernieresCommandes: RecentOrderItem[] = stats?.dernieresCommandes ?? [];
@@ -530,6 +570,7 @@ export default function Dashboard() {
               {/* Bar chart — CA (dynamic) */}
               <CaChartCard
                 caMensuel={caMensuel}
+                isLoading={isCaLoading}
                 preset={caPreset}
                 granularity={caGranularity}
                 dateFrom={caDateFrom}
@@ -582,7 +623,7 @@ export default function Dashboard() {
                       </PieChart>
                     </ResponsiveContainer>
                   )}
-                  <div className="mt-3 grid grid-cols-2 gap-y-1.5 gap-x-3">
+                  <div className="mt-8 grid grid-cols-2 gap-y-5 gap-x-12 w-fit mx-auto">
                     {Object.entries(STATUT_COLORS).map(([k, color]) => (
                       <div key={k} className="flex items-center gap-1.5">
                         <span
@@ -646,12 +687,11 @@ export default function Dashboard() {
                             <div className="font-bold text-sm">
                               {formatDZD(c.montantTotal)}
                             </div>
-                            <Badge
-                              variant={STATUT_BADGE[c.statut]}
-                              className="text-[10px] mt-1"
+                            <div
+                              className={`text-[10px] mt-1 px-2 py-0.5 rounded-full border w-fit ml-auto font-semibold ${STATUT_CLASSES[c.statut]}`}
                             >
                               {statutLabel[c.statut]}
-                            </Badge>
+                            </div>
                           </div>
                         </Link>
                       ))}

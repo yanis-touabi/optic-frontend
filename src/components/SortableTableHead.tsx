@@ -4,8 +4,7 @@ import { TableHead } from '@/components/ui/table';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import type { ColumnType, SortOrder } from '@/hooks/use-sortable-table';
 
-interface SortableTableHeadProps
-  extends React.ThHTMLAttributes<HTMLTableCellElement> {
+interface SortableTableHeadProps extends React.ThHTMLAttributes<HTMLTableCellElement> {
   /** Field name sent to the server (must match an allowed sort field). */
   field: string;
   /** Data type of the column — determines default sort direction. */
@@ -42,10 +41,7 @@ export function SortableTableHead({
     : ArrowUpDown;
 
   return (
-    <TableHead
-      className={cn('select-none', className)}
-      {...props}
-    >
+    <TableHead className={cn('select-none', className)} {...props}>
       <button
         type="button"
         onClick={() => onSort(field, type)}
