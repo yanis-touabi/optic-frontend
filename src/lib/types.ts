@@ -32,6 +32,12 @@ export interface Produit {
   description: string;
   prix: number;
   stock: number;
+  sku?: string;
+  barcode?: string;
+  purchasePrice?: number;
+  sellingPrice?: number;
+  profitAmount?: number;
+  profitMargin?: number;
   createdAt: string;
 }
 
@@ -69,6 +75,7 @@ export interface LigneCommande {
   designation: string;
   quantite: number;
   prixUnitaire: number;
+  prixAchatUnitaire?: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -153,5 +160,45 @@ export interface DashboardStatistics {
   top5Produits: TopProductItem[];
   caMensuel: MonthlyCaItem[];
   dernieresCommandes: RecentOrderItem[];
+}
+
+// ── Financial Statistics ──────────────────────────────────────────────────────
+
+export interface FinancialKpis {
+  period: string;
+  grossProfit: number;
+  grossMarginPercent: number;
+  totalRevenue: number;
+  totalCost: number;
+  avgMarginPercent: number;
+  inventoryValue: number;
+  inventoryRetailValue: number;
+  potentialProfit: number;
+}
+
+export interface ProductProfitabilityItem {
+  id: string;
+  nom: string;
+  sku?: string;
+  categorie: string;
+  totalRevenue: number;
+  totalCost: number;
+  grossProfit: number;
+  marginPercent: number;
+  unitsSold: number;
+}
+
+export interface InventoryValueResult {
+  totalCostValue: number;
+  totalRetailValue: number;
+  potentialProfit: number;
+  potentialMarginPercent: number;
+  itemCount: number;
+}
+
+export interface ProfitChartItem {
+  mois: string;
+  ca: number;
+  profit: number;
 }
 

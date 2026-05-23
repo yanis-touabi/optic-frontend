@@ -5,8 +5,12 @@ import type {
   Commande,
   CommandeStatut,
   DashboardStatistics,
+  FinancialKpis,
+  InventoryValueResult,
   LigneCommande,
+  MonthlyCaItem,
   Ordonnance,
+  ProductProfitabilityItem,
   Produit,
   PaginatedResponse,
   Store,
@@ -135,6 +139,7 @@ export const usePaginatedProduits = (params: {
   page: number;
   size: number;
   q?: string;
+  categorie?: string;
   sort?: string;
   order?: 'asc' | 'desc';
 }) =>
@@ -473,6 +478,40 @@ export const useCaChart = (caOptions?: CaChartOptions) =>
     },
   });
 
+// ==================== FINANCIAL STATISTICS ====================
+
+export const useFinancials = (period: string = '30d') =>
+  useQuery({
+    queryKey: ['financials', period],
+    queryFn: async () => {
+      const { data } = await apiClient.get<FinancialKpis>('/statistics/financials', {
+        params: { period },
+      });
+      return data;
+    },
+  });
+
+export const useProductProfitability = () =>
+  useQuery({
+    queryKey: ['productProfitability'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ProductProfitabilityItem[]>(
+        '/statistics/products/profitability',
+      );
+      return data;
+    },
+  });
+
+export const useInventoryValue = () =>
+  useQuery({
+    queryKey: ['inventoryValue'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<InventoryValueResult>(
+        '/statistics/inventory/value',
+      );
+      return data;
+    },
+  });
 
 // ==================== STORE ====================
 

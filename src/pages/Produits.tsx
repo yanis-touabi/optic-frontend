@@ -35,7 +35,18 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Search, Loader2, Download } from 'lucide-react';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  Loader2,
+  Download,
+  Barcode,
+  TrendingUp,
+  TrendingDown,
+  Package,
+} from 'lucide-react';
 import { exportToCSV } from '@/lib/csv';
 import { formatDZD } from '@/lib/format';
 import {
@@ -50,8 +61,13 @@ import type { Produit, ProduitCategorie } from '@/lib/types';
 import { toast } from 'sonner';
 import { useSortableTable } from '@/hooks/use-sortable-table';
 import { SortableTableHead } from '@/components/SortableTableHead';
+import { apiClient } from '@/api/apiClient';
 
-const empty: Omit<Produit, 'id' | 'createdAt'> = {
+// ── Constants ────────────────────────────────────────────────────────────────
+
+type FormState = Omit<Produit, 'id' | 'createdAt' | 'sku' | 'barcode' | 'profitAmount' | 'profitMargin'>;
+
+const empty: FormState = {
   nom: '',
   marque: '',
   modele: '',
@@ -59,6 +75,8 @@ const empty: Omit<Produit, 'id' | 'createdAt'> = {
   description: '',
   prix: 0,
   stock: 0,
+  purchasePrice: undefined,
+  sellingPrice: undefined,
 };
 
 const catLabel: Record<ProduitCategorie, string> = {
@@ -67,10 +85,63 @@ const catLabel: Record<ProduitCategorie, string> = {
   ACCESSOIRE: 'Accessoire',
 };
 
+const catColors: Record<ProduitCategorie, string> = {
+  MONTURE: 'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300',
+  VERRE: 'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300',
+  ACCESSOIRE: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300',
+};
+
+const ALL_CATS = ['ALL', 'MONTURE', 'VERRE', 'ACCESSOIRE'] as const;
+type CatFilter = typeof ALL_CATS[number];
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function MarginBadge({ margin }: { margin?: number }) {
+  if (margin == null) return null;
+  const good = margin >= 30;
+  const ok = margin >= 15;
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${
+        good
+          ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400'
+          : ok
+          ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400'
+          : 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400'
+      }`}
+    >
+      {good ? <TrendingUp className="h-2.5 w-2.5" /> : ok ? null : <TrendingDown className="h-2.5 w-2.5" />}
+      {margin.toFixed(1)}%
+    </span>
+  );
+}
+
+async function downloadBarcode(produitId: string, nom: string) {
+  try {
+    const response = await apiClient.get(`/products/${produitId}/barcode`, {
+      responseType: 'blob',
+    });
+    const url = window.URL.createObjectURL(new Blob([response.data as BlobPart]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `barcode-${nom.replace(/\s+/g, '-')}.png`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    toast.success('Code-barres téléchargé');
+  } catch {
+    toast.error('Erreur lors du téléchargement du code-barres');
+  }
+}
+
+// ── Component ────────────────────────────────────────────────────────────────
+
 export default function Produits() {
   const [q, setQ] = useState('');
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [catFilter, setCatFilter] = useState<CatFilter>('ALL');
   const debouncedSearch = useDebounce(q, 300);
 
   const { sort, order, onSort, directionFor } = useSortableTable('nom', 'asc');
@@ -79,6 +150,7 @@ export default function Produits() {
     page,
     size: pageSize,
     q: debouncedSearch,
+    categorie: catFilter === 'ALL' ? undefined : catFilter,
     sort,
     order,
   });
@@ -89,19 +161,20 @@ export default function Produits() {
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Produit | null>(null);
-  const [form, setForm] = useState(empty);
+  const [form, setForm] = useState<FormState>(empty);
 
   const produits = data?.content ?? [];
   const totalPages = data?.totalPages ?? 1;
+  const totalElements = data?.totalElements ?? 0;
 
   const openNew = () => {
     setEditing(null);
     setForm(empty);
     setOpen(true);
   };
+
   const openEdit = (p: Produit) => {
     setEditing(p);
-
     setForm({
       nom: p.nom ?? '',
       marque: p.marque ?? '',
@@ -110,8 +183,9 @@ export default function Produits() {
       description: p.description ?? '',
       prix: p.prix ?? 0,
       stock: p.stock ?? 0,
+      purchasePrice: p.purchasePrice,
+      sellingPrice: p.sellingPrice,
     });
-
     setOpen(true);
   };
 
@@ -119,23 +193,23 @@ export default function Produits() {
     if (!form.nom.trim()) return toast.error('Le nom est requis');
     try {
       if (editing) {
-        const payload = {
-          nom: form.nom,
-          marque: form.marque,
-          modele: form.modele,
-          categorie: form.categorie,
-          description: form.description,
-          prix: form.prix,
-          stock: form.stock,
-        };
-
         await updateMut.mutateAsync({
           id: editing.id,
-          patch: payload,
+          patch: {
+            nom: form.nom,
+            marque: form.marque,
+            modele: form.modele,
+            categorie: form.categorie,
+            description: form.description,
+            prix: form.prix,
+            stock: form.stock,
+            purchasePrice: form.purchasePrice ?? undefined,
+            sellingPrice: form.sellingPrice ?? undefined,
+          },
         });
         toast.success('Produit mis à jour');
       } else {
-        await createMut.mutateAsync(form);
+        await createMut.mutateAsync(form as any);
         toast.success('Produit ajouté');
       }
       setOpen(false);
@@ -158,11 +232,15 @@ export default function Produits() {
     exportToCSV(
       produits,
       {
+        sku: 'SKU',
         nom: 'Nom',
         marque: 'Marque',
         modele: 'Modèle',
         categorie: 'Catégorie',
-        prix: 'Prix (DZD)',
+        purchasePrice: 'Prix achat (DZD)',
+        sellingPrice: 'Prix vente (DZD)',
+        prix: 'Prix public (DZD)',
+        profitMargin: 'Marge (%)',
         stock: 'Stock',
       },
       'produits',
@@ -190,7 +268,9 @@ export default function Produits() {
         }
       />
       <div className="p-8 space-y-4">
-        <div className="flex items-center justify-between">
+        {/* ── Search + category tabs + page size ── */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search */}
           <div className="relative max-w-sm w-full">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -199,10 +279,37 @@ export default function Produits() {
                 setQ(e.target.value);
                 setPage(0);
               }}
-              placeholder="Rechercher..."
+              placeholder="Rechercher par nom, marque, SKU…"
               className="pl-9"
             />
           </div>
+
+          {/* Category filter pills */}
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+            {ALL_CATS.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => {
+                  setCatFilter(cat);
+                  setPage(0);
+                }}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  catFilter === cat
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {cat === 'ALL' ? 'Tous' : catLabel[cat as ProduitCategorie]}
+              </button>
+            ))}
+          </div>
+
+          {/* Total count */}
+          <span className="text-sm text-muted-foreground ml-auto">
+            {totalElements} produit{totalElements !== 1 ? 's' : ''}
+          </span>
+
+          {/* Page size */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Afficher</span>
             <Select
@@ -225,53 +332,128 @@ export default function Produits() {
             </Select>
           </div>
         </div>
+
+        {/* ── Table ── */}
         <Card className="shadow-[var(--shadow-card)]">
           <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead field="nom" type="text" direction={directionFor('nom')} onSort={onSort}>Nom</SortableTableHead>
-                  <SortableTableHead field="marque" type="text" direction={directionFor('marque')} onSort={onSort}>Marque / Modèle</SortableTableHead>
+                  <SortableTableHead field="nom" type="text" direction={directionFor('nom')} onSort={onSort}>
+                    Produit
+                  </SortableTableHead>
                   <TableHead>Catégorie</TableHead>
-                  <SortableTableHead field="prix" type="number" direction={directionFor('prix')} onSort={onSort} className="text-right">Prix</SortableTableHead>
-                  <SortableTableHead field="stock" type="number" direction={directionFor('stock')} onSort={onSort} className="text-right">Stock</SortableTableHead>
-                  <TableHead className="w-24"></TableHead>
+                  <TableHead className="hidden md:table-cell">SKU</TableHead>
+                  <SortableTableHead
+                    field="purchasePrice"
+                    type="number"
+                    direction={directionFor('purchasePrice')}
+                    onSort={onSort}
+                    className="text-right hidden lg:table-cell"
+                  >
+                    P. Achat
+                  </SortableTableHead>
+                  <SortableTableHead
+                    field="prix"
+                    type="number"
+                    direction={directionFor('prix')}
+                    onSort={onSort}
+                    className="text-right"
+                  >
+                    P. Vente
+                  </SortableTableHead>
+                  <TableHead className="text-right hidden lg:table-cell">Marge</TableHead>
+                  <SortableTableHead
+                    field="stock"
+                    type="number"
+                    direction={directionFor('stock')}
+                    onSort={onSort}
+                    className="text-right"
+                  >
+                    Stock
+                  </SortableTableHead>
+                  <TableHead className="w-28" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={8} className="text-center py-12">
                       <Loader2 className="h-5 w-5 animate-spin inline" />
                     </TableCell>
                   </TableRow>
                 ) : produits.length === 0 ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center text-muted-foreground py-8"
-                    >
-                      Aucun produit
+                    <TableCell colSpan={8} className="py-16">
+                      <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                        <Package className="h-10 w-10 opacity-30" />
+                        <p className="text-sm">Aucun produit trouvé</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
                   produits.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium">{p.nom}</TableCell>
+                    <TableRow key={p.id} className="group">
                       <TableCell>
-                        {p.marque} {p.modele}
+                        <div className="font-medium leading-tight">{p.nom}</div>
+                        {(p.marque || p.modele) && (
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {[p.marque, p.modele].filter(Boolean).join(' · ')}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                            catColors[p.categorie]
+                          }`}
+                        >
                           {catLabel[p.categorie]}
-                        </Badge>
+                        </span>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="hidden md:table-cell">
+                        {p.sku ? (
+                          <span className="font-mono text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                            {p.sku}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground/50">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right hidden lg:table-cell tabular-nums text-sm">
+                        {p.purchasePrice != null ? formatDZD(p.purchasePrice) : '—'}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums font-semibold text-sm">
                         {formatDZD(p.prix)}
                       </TableCell>
-                      <TableCell className="text-right">{p.stock}</TableCell>
+                      <TableCell className="text-right hidden lg:table-cell">
+                        <MarginBadge margin={p.profitMargin} />
+                      </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <span
+                          className={`text-sm font-medium tabular-nums ${
+                            p.stock === 0
+                              ? 'text-destructive'
+                              : p.stock <= 3
+                              ? 'text-warning'
+                              : ''
+                          }`}
+                        >
+                          {p.stock}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {p.barcode && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              title="Télécharger le code-barres"
+                              onClick={() => downloadBarcode(p.id, p.nom)}
+                            >
+                              <Barcode className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             size="icon"
                             variant="ghost"
@@ -296,17 +478,14 @@ export default function Produits() {
           </CardContent>
         </Card>
 
+        {/* ── Pagination ── */}
         {totalPages > 1 && (
           <Pagination>
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  className={
-                    page === 0
-                      ? 'pointer-events-none opacity-50'
-                      : 'cursor-pointer'
-                  }
+                  className={page === 0 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                 />
               </PaginationItem>
               <PaginationItem>
@@ -316,13 +495,9 @@ export default function Produits() {
               </PaginationItem>
               <PaginationItem>
                 <PaginationNext
-                  onClick={() =>
-                    setPage((p) => Math.min(totalPages - 1, p + 1))
-                  }
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   className={
-                    page === totalPages - 1
-                      ? 'pointer-events-none opacity-50'
-                      : 'cursor-pointer'
+                    page === totalPages - 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'
                   }
                 />
               </PaginationItem>
@@ -331,26 +506,41 @@ export default function Produits() {
         )}
       </div>
 
+      {/* ── Create / Edit Dialog ── */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editing ? 'Modifier le produit' : 'Nouveau produit'}
             </DialogTitle>
+            {editing?.sku && (
+              <p className="text-xs text-muted-foreground mt-1">
+                SKU :{' '}
+                <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-foreground">
+                  {editing.sku}
+                </span>
+              </p>
+            )}
           </DialogHeader>
+
           <div className="grid grid-cols-2 gap-4">
+            {/* Nom */}
             <div className="col-span-2">
               <Label>Nom *</Label>
               <Input
                 value={form.nom}
                 onChange={(e) => setForm({ ...form, nom: e.target.value })}
+                placeholder="Ex : Monture Ray-Ban RB5154"
               />
             </div>
+
+            {/* Marque & Modèle */}
             <div>
               <Label>Marque</Label>
               <Input
                 value={form.marque}
                 onChange={(e) => setForm({ ...form, marque: e.target.value })}
+                placeholder="Ex : Ray-Ban"
               />
             </div>
             <div>
@@ -358,15 +548,16 @@ export default function Produits() {
               <Input
                 value={form.modele}
                 onChange={(e) => setForm({ ...form, modele: e.target.value })}
+                placeholder="Ex : RB5154"
               />
             </div>
+
+            {/* Catégorie */}
             <div>
               <Label>Catégorie</Label>
               <Select
                 value={form.categorie}
-                onValueChange={(v) =>
-                  setForm({ ...form, categorie: v as ProduitCategorie })
-                }
+                onValueChange={(v) => setForm({ ...form, categorie: v as ProduitCategorie })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -378,37 +569,116 @@ export default function Produits() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Prix (DZD)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={form.prix}
-                onChange={(e) =>
-                  setForm({ ...form, prix: Number(e.target.value) })
-                }
-              />
-            </div>
+
+            {/* Stock */}
             <div>
               <Label>Stock</Label>
               <Input
                 type="number"
+                min="0"
                 value={form.stock}
-                onChange={(e) =>
-                  setForm({ ...form, stock: Number(e.target.value) })
-                }
+                onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
               />
             </div>
+
+            {/* Divider: Pricing */}
+            <div className="col-span-2 border-t pt-3 mt-1">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3">
+                Tarification & Rentabilité
+              </p>
+              <div className="grid grid-cols-3 gap-4">
+                {/* Prix d'achat */}
+                <div>
+                  <Label>Prix d'achat (DZD)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={form.purchasePrice ?? ''}
+                    placeholder="0.00"
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        purchasePrice: e.target.value === '' ? undefined : Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+
+                {/* Prix de vente recommandé */}
+                <div>
+                  <Label>Prix de vente (DZD)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={form.sellingPrice ?? ''}
+                    placeholder="0.00"
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        sellingPrice: e.target.value === '' ? undefined : Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+
+                {/* Prix public (prix affiché) */}
+                <div>
+                  <Label>Prix public (DZD)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={form.prix}
+                    onChange={(e) => setForm({ ...form, prix: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+
+              {/* Live margin preview */}
+              {form.purchasePrice != null &&
+                form.purchasePrice > 0 &&
+                form.prix > 0 && (
+                  <div className="mt-3 p-3 rounded-lg bg-muted/60 border border-border">
+                    <div className="flex items-center gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground text-xs">Profit estimé : </span>
+                        <span className="font-semibold">
+                          {formatDZD(form.prix - form.purchasePrice)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground text-xs">Marge : </span>
+                        <span
+                          className={`font-semibold ${
+                            ((form.prix - form.purchasePrice) / form.prix) * 100 >= 30
+                              ? 'text-green-600'
+                              : ((form.prix - form.purchasePrice) / form.prix) * 100 >= 15
+                              ? 'text-amber-600'
+                              : 'text-red-600'
+                          }`}
+                        >
+                          {(((form.prix - form.purchasePrice) / form.prix) * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+            </div>
+
+            {/* Description */}
             <div className="col-span-2">
               <Label>Description</Label>
               <Textarea
                 value={form.description}
-                onChange={(e) =>
-                  setForm({ ...form, description: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder="Description optionnelle du produit…"
+                rows={3}
               />
             </div>
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
               Annuler

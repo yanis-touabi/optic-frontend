@@ -17,6 +17,9 @@ import {
   Medal,
   AlertCircle,
   SlidersHorizontal,
+  DollarSign,
+  Percent,
+  Warehouse,
 } from 'lucide-react';
 import {
   BarChart,
@@ -28,9 +31,10 @@ import {
   PieChart,
   Pie,
   Cell,
+  Legend,
 } from 'recharts';
 import { formatDZD, formatDateTime, statutLabel } from '@/lib/format';
-import { useDashboard, useCaChart, type CaChartOptions } from '@/lib/data';
+import { useDashboard, useCaChart, useFinancials, useInventoryValue, type CaChartOptions } from '@/lib/data';
 import { PageHeader } from '@/components/PageHeader';
 import { useState, useMemo } from 'react';
 import type {
@@ -86,7 +90,7 @@ function monthsAgo(n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-// ── CaChartCard ──────────────────────────────────────────────────────────────
+// ── CA + Profit chart card ────────────────────────────────────────────────────
 interface CaChartCardProps {
   caMensuel: MonthlyCaItem[];
   isLoading?: boolean;
@@ -112,12 +116,9 @@ function CaChartCard({
   onDateFromChange,
   onDateToChange,
 }: CaChartCardProps) {
-  // Threshold: beyond 8 bars we enable horizontal scroll
   const needsScroll = caMensuel.length > 8;
-  const BAR_MIN_WIDTH = 52; // px per bar when scrolling
-  const chartMinWidth = needsScroll
-    ? caMensuel.length * BAR_MIN_WIDTH
-    : undefined;
+  const BAR_MIN_WIDTH = 64;
+  const chartMinWidth = needsScroll ? caMensuel.length * BAR_MIN_WIDTH : undefined;
 
   const pillBase =
     'px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer border';
@@ -129,10 +130,8 @@ function CaChartCard({
   return (
     <Card className="lg:col-span-2 shadow-[var(--shadow-card)]">
       <CardHeader className="pb-3">
-        {/* Title row */}
         <div className="flex items-start justify-between gap-2 flex-wrap">
-          <CardTitle className="text-base">Chiffre d'affaires</CardTitle>
-          {/* Preset pills */}
+          <CardTitle className="text-base">CA &amp; Marge brute</CardTitle>
           <div className="flex items-center gap-1 bg-muted rounded-lg p-1 flex-wrap">
             {CA_PRESETS.map((p) => (
               <button
@@ -148,14 +147,10 @@ function CaChartCard({
           </div>
         </div>
 
-        {/* Controls row */}
         <div className="flex items-center gap-3 flex-wrap mt-2">
-          {/* Granularity */}
           <div className="flex items-center gap-1.5">
             <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-            <span className="text-xs text-muted-foreground font-medium">
-              Granularité :
-            </span>
+            <span className="text-xs text-muted-foreground font-medium">Granularité :</span>
             <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5">
               {CA_GRANULARITIES.map((g) => (
                 <button
@@ -173,7 +168,6 @@ function CaChartCard({
             </div>
           </div>
 
-          {/* Custom date range */}
           {preset === 'custom' && (
             <div className="flex items-center gap-2 ml-auto">
               <Calendar className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
@@ -193,22 +187,33 @@ function CaChartCard({
             </div>
           )}
 
-          {/* Data point count badge */}
           {caMensuel.length > 0 && !isLoading && (
             <span className="ml-auto text-xs text-muted-foreground tabular-nums">
               {caMensuel.length} période{caMensuel.length > 1 ? 's' : ''}
             </span>
           )}
         </div>
+
+        {/* Legend */}
+        <div className="flex items-center gap-4 mt-2">
+          <div className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: 'hsl(var(--primary))' }} />
+            <span className="text-[11px] text-muted-foreground">CA</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: '#22c55e' }} />
+            <span className="text-[11px] text-muted-foreground">Marge brute</span>
+          </div>
+        </div>
       </CardHeader>
 
       <CardContent className="pt-0">
         {isLoading ? (
-          <div className="h-[220px] flex items-center justify-center">
+          <div className="h-[240px] flex items-center justify-center">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : caMensuel.length === 0 ? (
-          <div className="h-[220px] flex items-center justify-center text-sm text-muted-foreground">
+          <div className="h-[240px] flex items-center justify-center text-sm text-muted-foreground">
             Aucune donnée sur cette période.
           </div>
         ) : (
@@ -220,14 +225,11 @@ function CaChartCard({
             className="rounded-md"
           >
             <div style={{ minWidth: chartMinWidth }}>
-              <ResponsiveContainer width="100%" height={220}>
+              <ResponsiveContainer width="100%" height={240}>
                 <BarChart
                   data={caMensuel}
-                  barSize={
-                    needsScroll
-                      ? 36
-                      : Math.max(18, Math.floor(560 / caMensuel.length) - 8)
-                  }
+                  barSize={needsScroll ? 20 : Math.max(12, Math.floor(400 / caMensuel.length) - 8)}
+                  barGap={4}
                   margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
                 >
                   <XAxis
@@ -245,7 +247,10 @@ function CaChartCard({
                     width={38}
                   />
                   <Tooltip
-                    formatter={(v: number) => [formatDZD(v), 'CA']}
+                    formatter={(v: number, name: string) => [
+                      formatDZD(v),
+                      name === 'ca' ? 'CA' : 'Marge brute',
+                    ]}
                     contentStyle={{
                       borderRadius: 12,
                       fontSize: 12,
@@ -256,19 +261,8 @@ function CaChartCard({
                     }}
                     cursor={{ fill: 'hsl(var(--muted) / 0.5)', radius: [6, 6, 0, 0] }}
                   />
-                  <Bar dataKey="ca" radius={[6, 6, 0, 0]}>
-                    {caMensuel.map((_, i) => (
-                      <Cell
-                        key={i}
-                        fill={
-                          i === caMensuel.length - 1
-                            ? 'hsl(var(--primary))'
-                            : 'hsl(var(--primary) / 0.35)'
-                        }
-                        className="transition-colors duration-200 hover:fill-[hsl(var(--primary)/0.8)] cursor-pointer"
-                      />
-                    ))}
-                  </Bar>
+                  <Bar dataKey="ca" radius={[6, 6, 0, 0]} fill="hsl(var(--primary) / 0.7)" name="ca" />
+                  <Bar dataKey="profit" radius={[6, 6, 0, 0]} fill="#22c55e" name="profit" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -416,6 +410,8 @@ export default function Dashboard() {
 
   const { data: stats, isLoading } = useDashboard(period);
   const { data: caMensuel = [], isLoading: isCaLoading } = useCaChart(caOptions);
+  const { data: financials } = useFinancials(period);
+  const { data: inventoryValue } = useInventoryValue();
 
   const showTrend = period !== 'all';
 
@@ -564,6 +560,71 @@ export default function Dashboard() {
                 );
               })}
             </div>
+
+            {/* ── FINANCIAL KPI ROW ── */}
+            {financials && (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {/* Marge brute */}
+                <Card className="shadow-[var(--shadow-card)] border-l-4 border-l-green-400">
+                  <CardContent className="p-5 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-2xl font-bold text-green-600 tabular-nums">
+                        {formatDZD(financials.grossProfit)}
+                      </div>
+                      <div className="text-xs text-muted-foreground font-medium mt-0.5">Marge brute</div>
+                    </div>
+                    <div className="h-10 w-10 rounded-xl bg-green-100 dark:bg-green-900/30 grid place-items-center flex-shrink-0">
+                      <DollarSign className="h-4 w-4 text-green-600" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Taux de marge */}
+                <Card className="shadow-[var(--shadow-card)] border-l-4 border-l-blue-400">
+                  <CardContent className="p-5 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-2xl font-bold tabular-nums">
+                        {financials.grossMarginPercent.toFixed(1)}%
+                      </div>
+                      <div className="text-xs text-muted-foreground font-medium mt-0.5">Taux de marge</div>
+                    </div>
+                    <div className="h-10 w-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 grid place-items-center flex-shrink-0">
+                      <Percent className="h-4 w-4 text-blue-600" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Valeur inventaire */}
+                <Card className="shadow-[var(--shadow-card)] border-l-4 border-l-violet-400">
+                  <CardContent className="p-5 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-2xl font-bold tabular-nums">
+                        {formatDZD(inventoryValue?.totalCostValue ?? financials.inventoryValue)}
+                      </div>
+                      <div className="text-xs text-muted-foreground font-medium mt-0.5">Valeur stock (coût)</div>
+                    </div>
+                    <div className="h-10 w-10 rounded-xl bg-violet-100 dark:bg-violet-900/30 grid place-items-center flex-shrink-0">
+                      <Warehouse className="h-4 w-4 text-violet-600" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Profit potentiel */}
+                <Card className="shadow-[var(--shadow-card)] border-l-4 border-l-amber-400">
+                  <CardContent className="p-5 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-2xl font-bold text-amber-600 tabular-nums">
+                        {formatDZD(inventoryValue?.potentialProfit ?? financials.potentialProfit)}
+                      </div>
+                      <div className="text-xs text-muted-foreground font-medium mt-0.5">Profit potentiel stock</div>
+                    </div>
+                    <div className="h-10 w-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 grid place-items-center flex-shrink-0">
+                      <TrendingUp className="h-4 w-4 text-amber-600" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* ── CHARTS ROW ── */}
             <div className="grid gap-4 lg:grid-cols-3">
