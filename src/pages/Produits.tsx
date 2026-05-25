@@ -65,7 +65,10 @@ import { apiClient } from '@/api/apiClient';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-type FormState = Omit<Produit, 'id' | 'createdAt' | 'sku' | 'barcode' | 'profitAmount' | 'profitMargin'>;
+type FormState = Omit<Produit, 'id' | 'createdAt' | 'profitAmount' | 'profitMargin'> & {
+  barcodeMode: 'none' | 'auto' | 'custom';
+  skuMode: 'auto' | 'custom';
+};
 
 const empty: FormState = {
   nom: '',
@@ -77,6 +80,10 @@ const empty: FormState = {
   stock: 0,
   purchasePrice: undefined,
   sellingPrice: undefined,
+  sku: undefined,
+  barcode: undefined,
+  barcodeMode: 'none',
+  skuMode: 'auto',
 };
 
 const catLabel: Record<ProduitCategorie, string> = {
@@ -185,6 +192,10 @@ export default function Produits() {
       stock: p.stock ?? 0,
       purchasePrice: p.purchasePrice,
       sellingPrice: p.sellingPrice,
+      sku: p.sku ?? undefined,
+      barcode: p.barcode ?? undefined,
+      barcodeMode: p.barcode ? 'custom' : 'none',
+      skuMode: p.sku ? 'custom' : 'auto',
     });
     setOpen(true);
   };
@@ -192,24 +203,69 @@ export default function Produits() {
   const save = async () => {
     if (!form.nom.trim()) return toast.error('Le nom est requis');
     try {
+      // Build barcode value based on mode
+      let barcodeVal: string | undefined | null;
+      if (form.barcodeMode === 'auto') barcodeVal = 'AUTO';
+      else if (form.barcodeMode === 'custom') barcodeVal = form.barcode?.trim() || undefined;
+      else barcodeVal = null; // 'none' → clear barcode
+
       if (editing) {
-        await updateMut.mutateAsync({
-          id: editing.id,
-          patch: {
-            nom: form.nom,
-            marque: form.marque,
-            modele: form.modele,
-            categorie: form.categorie,
-            description: form.description,
-            prix: form.prix,
-            stock: form.stock,
-            purchasePrice: form.purchasePrice ?? undefined,
-            sellingPrice: form.sellingPrice ?? undefined,
-          },
-        });
+        const patch: Record<string, unknown> = {
+          nom: form.nom,
+          marque: form.marque,
+          modele: form.modele,
+          categorie: form.categorie,
+          description: form.description,
+          prix: form.prix,
+          stock: form.stock,
+          purchasePrice: form.purchasePrice ?? undefined,
+          sellingPrice: form.sellingPrice ?? undefined,
+        };
+
+        // SKU
+        if (form.skuMode === 'custom' && form.sku?.trim()) {
+          patch.sku = form.sku.trim();
+        }
+
+        // Barcode
+        if (barcodeVal === 'AUTO') {
+          patch.barcode = 'AUTO';
+        } else if (barcodeVal === null) {
+          patch.barcode = null;
+        } else if (barcodeVal) {
+          patch.barcode = barcodeVal;
+        }
+
+        await updateMut.mutateAsync({ id: editing.id, patch });
         toast.success('Produit mis à jour');
       } else {
-        await createMut.mutateAsync(form as any);
+        const payload: Record<string, unknown> = {
+          nom: form.nom,
+          marque: form.marque,
+          modele: form.modele,
+          categorie: form.categorie,
+          description: form.description,
+          prix: form.prix,
+          stock: form.stock,
+          purchasePrice: form.purchasePrice ?? undefined,
+          sellingPrice: form.sellingPrice ?? undefined,
+        };
+
+        // SKU: only send if custom mode and non-empty
+        if (form.skuMode === 'custom' && form.sku?.trim()) {
+          payload.sku = form.sku.trim();
+        }
+        // else omit → backend auto-generates
+
+        // Barcode
+        if (barcodeVal === 'AUTO') {
+          payload.barcode = 'AUTO';
+        } else if (barcodeVal) {
+          payload.barcode = barcodeVal;
+        }
+        // if 'none' → omit barcode entirely for creation
+
+        await createMut.mutateAsync(payload as any);
         toast.success('Produit ajouté');
       }
       setOpen(false);
@@ -368,7 +424,7 @@ export default function Produits() {
                     type="number"
                     direction={directionFor('stock')}
                     onSort={onSort}
-                    className="text-right"
+                    className="text-center"
                   >
                     Stock
                   </SortableTableHead>
@@ -429,7 +485,7 @@ export default function Produits() {
                       <TableCell className="text-right hidden lg:table-cell">
                         <MarginBadge margin={p.profitMargin} />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-center">
                         <span
                           className={`text-sm font-medium tabular-nums ${
                             p.stock === 0
@@ -443,7 +499,7 @@ export default function Produits() {
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex justify-end gap-1">
                           {p.barcode && (
                             <Button
                               size="icon"
@@ -579,6 +635,144 @@ export default function Produits() {
                 value={form.stock}
                 onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
               />
+            </div>
+
+            {/* ── SKU & Code-barres ── */}
+            <div className="col-span-2 border-t pt-3 mt-1">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3">
+                SKU & Code-barres
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                {/* SKU */}
+                <div>
+                  <Label>SKU</Label>
+                  <div className="flex items-center gap-2 mt-1 mb-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          skuMode: 'auto',
+                          sku: undefined,
+                        })
+                      }
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all border ${
+                        form.skuMode === 'auto'
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-muted text-muted-foreground border-border hover:bg-accent'
+                      }`}
+                    >
+                      Auto-généré
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          skuMode: 'custom',
+                        })
+                      }
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all border ${
+                        form.skuMode === 'custom'
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-muted text-muted-foreground border-border hover:bg-accent'
+                      }`}
+                    >
+                      Saisir manuellement
+                    </button>
+                  </div>
+                  {form.skuMode === 'custom' && (
+                    <Input
+                      value={form.sku ?? ''}
+                      onChange={(e) =>
+                        setForm({ ...form, sku: e.target.value || undefined })
+                      }
+                      placeholder="Ex : MON-0042"
+                    />
+                  )}
+                  {form.skuMode === 'auto' && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Le SKU sera généré automatiquement selon la catégorie
+                    </p>
+                  )}
+                </div>
+
+                {/* Code-barres */}
+                <div>
+                  <Label>Code-barres</Label>
+                  <div className="flex items-center gap-2 mt-1 mb-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          barcodeMode: 'none',
+                          barcode: undefined,
+                        })
+                      }
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all border ${
+                        form.barcodeMode === 'none'
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-muted text-muted-foreground border-border hover:bg-accent'
+                      }`}
+                    >
+                      Aucun
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          barcodeMode: 'auto',
+                          barcode: undefined,
+                        })
+                      }
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all border ${
+                        form.barcodeMode === 'auto'
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-muted text-muted-foreground border-border hover:bg-accent'
+                      }`}
+                    >
+                      Générer auto.
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          barcodeMode: 'custom',
+                        })
+                      }
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all border ${
+                        form.barcodeMode === 'custom'
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-muted text-muted-foreground border-border hover:bg-accent'
+                      }`}
+                    >
+                      Saisir / Scanner
+                    </button>
+                  </div>
+                  {form.barcodeMode === 'custom' && (
+                    <Input
+                      value={form.barcode ?? ''}
+                      onChange={(e) =>
+                        setForm({ ...form, barcode: e.target.value || undefined })
+                      }
+                      placeholder="Scanner ou saisir le code-barres"
+                    />
+                  )}
+                  {form.barcodeMode === 'auto' && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Un code EAN-13 sera généré automatiquement
+                    </p>
+                  )}
+                  {form.barcodeMode === 'none' && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Aucun code-barres attribué
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Divider: Pricing */}
