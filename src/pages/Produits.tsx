@@ -410,9 +410,9 @@ export default function Produits() {
                     P. Achat
                   </SortableTableHead>
                   <SortableTableHead
-                    field="prix"
+                    field="sellingPrice"
                     type="number"
-                    direction={directionFor('prix')}
+                    direction={directionFor('sellingPrice')}
                     onSort={onSort}
                     className="text-right"
                   >
@@ -480,7 +480,7 @@ export default function Produits() {
                         {p.purchasePrice != null ? formatDZD(p.purchasePrice) : '—'}
                       </TableCell>
                       <TableCell className="text-right tabular-nums font-semibold text-sm">
-                        {formatDZD(p.prix)}
+                        {p.sellingPrice != null ? formatDZD(p.sellingPrice) : '—'}
                       </TableCell>
                       <TableCell className="text-right hidden lg:table-cell">
                         <MarginBadge margin={p.profitMargin} />
@@ -786,10 +786,8 @@ export default function Produits() {
                   <Label>Prix d'achat (DZD)</Label>
                   <Input
                     type="number"
-                    step="0.01"
                     min="0"
                     value={form.purchasePrice ?? ''}
-                    placeholder="0.00"
                     onChange={(e) =>
                       setForm({
                         ...form,
@@ -804,10 +802,8 @@ export default function Produits() {
                   <Label>Prix de vente (DZD)</Label>
                   <Input
                     type="number"
-                    step="0.01"
                     min="0"
                     value={form.sellingPrice ?? ''}
-                    placeholder="0.00"
                     onChange={(e) =>
                       setForm({
                         ...form,
@@ -822,7 +818,6 @@ export default function Produits() {
                   <Label>Prix public (DZD)</Label>
                   <Input
                     type="number"
-                    step="0.01"
                     min="0"
                     value={form.prix}
                     onChange={(e) => setForm({ ...form, prix: Number(e.target.value) })}
@@ -831,29 +826,30 @@ export default function Produits() {
               </div>
 
               {/* Live margin preview */}
-              {form.purchasePrice != null &&
-                form.purchasePrice > 0 &&
-                form.prix > 0 && (
+              {form.sellingPrice != null &&
+                form.sellingPrice > 0 &&
+                form.purchasePrice != null &&
+                form.purchasePrice > 0 && (
                   <div className="mt-3 p-3 rounded-lg bg-muted/60 border border-border">
                     <div className="flex items-center gap-4 text-sm">
                       <div>
                         <span className="text-muted-foreground text-xs">Profit estimé : </span>
                         <span className="font-semibold">
-                          {formatDZD(form.prix - form.purchasePrice)}
+                          {formatDZD(form.sellingPrice - form.purchasePrice)}
                         </span>
                       </div>
                       <div>
                         <span className="text-muted-foreground text-xs">Marge : </span>
                         <span
                           className={`font-semibold ${
-                            ((form.prix - form.purchasePrice) / form.prix) * 100 >= 30
+                            ((form.sellingPrice - form.purchasePrice) / form.purchasePrice) * 100 >= 30
                               ? 'text-green-600'
-                              : ((form.prix - form.purchasePrice) / form.prix) * 100 >= 15
+                              : ((form.sellingPrice - form.purchasePrice) / form.purchasePrice) * 100 >= 15
                               ? 'text-amber-600'
                               : 'text-red-600'
                           }`}
                         >
-                          {(((form.prix - form.purchasePrice) / form.prix) * 100).toFixed(1)}%
+                          {(((form.sellingPrice - form.purchasePrice) / form.purchasePrice) * 100).toFixed(1)}%
                         </span>
                       </div>
                     </div>
