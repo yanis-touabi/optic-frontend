@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { type SortOrder } from '@/hooks/use-sortable-table';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,9 +69,11 @@ import { useSortableTable } from '@/hooks/use-sortable-table';
 import { SortableTableHead } from '@/components/SortableTableHead';
 
 const statutColors: Record<CommandeStatut, string> = {
-  EN_ATTENTE: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800',
+  EN_ATTENTE:
+    'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800',
   EN_TRAITEMENT: 'bg-primary/10 text-primary border-primary/20',
-  TERMINEE: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',
+  TERMINEE:
+    'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',
   ANNULEE: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
@@ -79,18 +82,53 @@ export default function Commandes() {
   const updateStatut = useUpdateCommandeStatut();
   const deleteMut = useDeleteCommande();
 
-  const [q, setQ] = useState('');
-  const [statut, setStatut] = useState<string>('ALL');
-  const [clientId, setClientId] = useState<string>('ALL');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [q, setQ] = useState(() => sessionStorage.getItem('commandes_q') ?? '');
+  const [statut, setStatut] = useState<string>(
+    () => sessionStorage.getItem('commandes_statut') ?? 'ALL',
+  );
+  const [clientId, setClientId] = useState<string>(
+    () => sessionStorage.getItem('commandes_clientId') ?? 'ALL',
+  );
+  const [dateFrom, setDateFrom] = useState(
+    () => sessionStorage.getItem('commandes_dateFrom') ?? '',
+  );
+  const [dateTo, setDateTo] = useState(
+    () => sessionStorage.getItem('commandes_dateTo') ?? '',
+  );
+  const [page, setPage] = useState(() => {
+    const val = sessionStorage.getItem('commandes_page');
+    return val ? Number(val) : 0;
+  });
+  const [pageSize, setPageSize] = useState(() => {
+    const val = sessionStorage.getItem('commandes_pageSize');
+    return val ? Number(val) : DEFAULT_PAGE_SIZE;
+  });
   const [clientOpen, setClientOpen] = useState(false);
 
   const debouncedQ = useDebounce(q, 300);
 
-  const { sort, order, onSort, directionFor } = useSortableTable('createdAt', 'desc');
+  const initialSort = sessionStorage.getItem('commandes_sort') ?? 'createdAt';
+  const initialOrder =
+    (sessionStorage.getItem('commandes_order') as SortOrder) ?? 'desc';
+  const { sort, order, onSort, directionFor } = useSortableTable(
+    initialSort,
+    initialOrder,
+  );
+
+  useEffect(() => {
+    sessionStorage.setItem('commandes_q', q);
+    sessionStorage.setItem('commandes_statut', statut);
+    sessionStorage.setItem('commandes_clientId', clientId);
+    sessionStorage.setItem('commandes_dateFrom', dateFrom);
+    sessionStorage.setItem('commandes_dateTo', dateTo);
+    sessionStorage.setItem('commandes_page', page.toString());
+    sessionStorage.setItem('commandes_pageSize', pageSize.toString());
+  }, [q, statut, clientId, dateFrom, dateTo, page, pageSize]);
+
+  useEffect(() => {
+    if (sort) sessionStorage.setItem('commandes_sort', sort);
+    if (order) sessionStorage.setItem('commandes_order', order);
+  }, [sort, order]);
 
   // ✅ Server-side filtering & pagination — no more fetching 10,000 records
   const { data, isLoading } = usePaginatedCommandes({
@@ -332,15 +370,47 @@ export default function Commandes() {
 
         <Card className="shadow-[var(--shadow-card)]">
           <CardContent className="p-0">
-            <Table>
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead field="numero" type="number" direction={directionFor('numero')} onSort={onSort}>N°</SortableTableHead>
-                  <TableHead>Client</TableHead>
-                  <SortableTableHead field="createdAt" type="date" direction={directionFor('createdAt')} onSort={onSort} className="text-center">Date</SortableTableHead>
-                  <SortableTableHead field="statut" type="text" direction={directionFor('statut')} onSort={onSort} className="text-center">Statut</SortableTableHead>
-                  <SortableTableHead field="montantTotal" type="number" direction={directionFor('montantTotal')} onSort={onSort} className="text-center">Montant</SortableTableHead>
-                  <TableHead className="w-40"></TableHead>
+                  <SortableTableHead
+                    field="numero"
+                    type="number"
+                    direction={directionFor('numero')}
+                    onSort={onSort}
+                    className="w-[10%]"
+                  >
+                    N°
+                  </SortableTableHead>
+                  <TableHead className="w-[20%]">Client</TableHead>
+                  <SortableTableHead
+                    field="createdAt"
+                    type="date"
+                    direction={directionFor('createdAt')}
+                    onSort={onSort}
+                    className="text-center w-[20%]"
+                  >
+                    Date
+                  </SortableTableHead>
+                  <SortableTableHead
+                    field="statut"
+                    type="text"
+                    direction={directionFor('statut')}
+                    onSort={onSort}
+                    className="text-center w-[20%]"
+                  >
+                    Statut
+                  </SortableTableHead>
+                  <SortableTableHead
+                    field="montantTotal"
+                    type="number"
+                    direction={directionFor('montantTotal')}
+                    onSort={onSort}
+                    className="text-center w-[15%]"
+                  >
+                    Montant
+                  </SortableTableHead>
+                  <TableHead className="w-[15%]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

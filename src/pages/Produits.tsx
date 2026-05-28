@@ -65,7 +65,9 @@ import { apiClient } from '@/api/apiClient';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-type FormState = Omit<Produit, 'id' | 'createdAt' | 'profitAmount' | 'profitMargin'> & {
+type FormState = Omit<Produit, 'id' | 'createdAt' | 'profitAmount' | 'profitMargin' | 'prix' | 'stock'> & {
+  prix?: number;
+  stock?: number;
   barcodeMode: 'none' | 'auto' | 'custom';
   skuMode: 'auto' | 'custom';
 };
@@ -76,8 +78,8 @@ const empty: FormState = {
   modele: '',
   categorie: 'MONTURE',
   description: '',
-  prix: 0,
-  stock: 0,
+  prix: undefined,
+  stock: undefined,
   purchasePrice: undefined,
   sellingPrice: undefined,
   sku: undefined,
@@ -216,8 +218,8 @@ export default function Produits() {
           modele: form.modele,
           categorie: form.categorie,
           description: form.description,
-          prix: form.prix,
-          stock: form.stock,
+          prix: form.prix ?? 0,
+          stock: form.stock ?? 0,
           purchasePrice: form.purchasePrice ?? undefined,
           sellingPrice: form.sellingPrice ?? undefined,
         };
@@ -245,8 +247,8 @@ export default function Produits() {
           modele: form.modele,
           categorie: form.categorie,
           description: form.description,
-          prix: form.prix,
-          stock: form.stock,
+          prix: form.prix ?? 0,
+          stock: form.stock ?? 0,
           purchasePrice: form.purchasePrice ?? undefined,
           sellingPrice: form.sellingPrice ?? undefined,
         };
@@ -392,20 +394,20 @@ export default function Produits() {
         {/* ── Table ── */}
         <Card className="shadow-[var(--shadow-card)]">
           <CardContent className="p-0">
-            <Table>
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead field="nom" type="text" direction={directionFor('nom')} onSort={onSort}>
+                  <SortableTableHead field="nom" type="text" direction={directionFor('nom')} onSort={onSort} className="w-[25%] md:w-[22%] lg:w-[20%]">
                     Produit
                   </SortableTableHead>
-                  <TableHead>Catégorie</TableHead>
-                  <TableHead className="hidden md:table-cell">SKU</TableHead>
+                  <TableHead className="w-[20%] md:w-[15%] lg:w-[12%]">Catégorie</TableHead>
+                  <TableHead className="hidden md:table-cell md:w-[18%] lg:w-[15%]">SKU</TableHead>
                   <SortableTableHead
                     field="purchasePrice"
                     type="number"
                     direction={directionFor('purchasePrice')}
                     onSort={onSort}
-                    className="text-right hidden lg:table-cell"
+                    className="text-right hidden lg:table-cell lg:w-[12%]"
                   >
                     P. Achat
                   </SortableTableHead>
@@ -414,21 +416,21 @@ export default function Produits() {
                     type="number"
                     direction={directionFor('sellingPrice')}
                     onSort={onSort}
-                    className="text-right"
+                    className="text-right w-[25%] md:w-[18%] lg:w-[12%]"
                   >
                     P. Vente
                   </SortableTableHead>
-                  <TableHead className="text-right hidden lg:table-cell">Marge</TableHead>
+                  <TableHead className="text-right hidden lg:table-cell lg:w-[10%]">Marge</TableHead>
                   <SortableTableHead
                     field="stock"
                     type="number"
                     direction={directionFor('stock')}
                     onSort={onSort}
-                    className="text-center"
+                    className="text-center w-[15%] md:w-[12%] lg:w-[9%]"
                   >
                     Stock
                   </SortableTableHead>
-                  <TableHead className="w-28" />
+                  <TableHead className="w-[15%] md:w-[15%] lg:w-[10%]" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -632,8 +634,9 @@ export default function Produits() {
               <Input
                 type="number"
                 min="0"
-                value={form.stock}
-                onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
+                placeholder="0"
+                value={form.stock ?? ''}
+                onChange={(e) => setForm({ ...form, stock: e.target.value === '' ? undefined : Number(e.target.value) })}
               />
             </div>
 
@@ -787,6 +790,7 @@ export default function Produits() {
                   <Input
                     type="number"
                     min="0"
+                    placeholder="0"
                     value={form.purchasePrice ?? ''}
                     onChange={(e) =>
                       setForm({
@@ -803,6 +807,7 @@ export default function Produits() {
                   <Input
                     type="number"
                     min="0"
+                    placeholder="0"
                     value={form.sellingPrice ?? ''}
                     onChange={(e) =>
                       setForm({
@@ -819,8 +824,9 @@ export default function Produits() {
                   <Input
                     type="number"
                     min="0"
-                    value={form.prix}
-                    onChange={(e) => setForm({ ...form, prix: Number(e.target.value) })}
+                    placeholder="0"
+                    value={form.prix ?? ''}
+                    onChange={(e) => setForm({ ...form, prix: e.target.value === '' ? undefined : Number(e.target.value) })}
                   />
                 </div>
               </div>

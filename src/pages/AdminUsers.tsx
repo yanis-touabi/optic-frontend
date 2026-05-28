@@ -392,13 +392,13 @@ export default function AdminUsers() {
             </div>
           ) : (
             <>
-              <Table>
+              <Table className="table-fixed w-full">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Date d'inscription</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="w-[25%]">Nom</TableHead>
+                    <TableHead className="w-[35%]">Email</TableHead>
+                    <TableHead className="w-[15%]">Date d'inscription</TableHead>
+                    <TableHead className="text-right w-[25%]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -504,14 +504,14 @@ export default function AdminUsers() {
             </div>
           ) : (
             <>
-              <Table>
+              <Table className="table-fixed w-full">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Rôle</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="w-[25%]">Nom</TableHead>
+                    <TableHead className="w-[35%]">Email</TableHead>
+                    <TableHead className="w-[12%]">Rôle</TableHead>
+                    <TableHead className="w-[12%]">Statut</TableHead>
+                    <TableHead className="text-right w-[16%]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

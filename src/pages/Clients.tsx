@@ -223,14 +223,14 @@ export default function Clients() {
         </div>
         <Card className="shadow-[var(--shadow-card)]">
           <CardContent className="p-0">
-            <Table>
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead field="nom" type="text" direction={directionFor('nom')} onSort={onSort}>Nom</SortableTableHead>
-                  <TableHead>Téléphone</TableHead>
-                  <SortableTableHead field="email" type="text" direction={directionFor('email')} onSort={onSort}>Email</SortableTableHead>
-                  <TableHead>Adresse</TableHead>
-                  <TableHead className="w-24"></TableHead>
+                  <SortableTableHead field="nom" type="text" direction={directionFor('nom')} onSort={onSort} className="w-[25%]">Nom</SortableTableHead>
+                  <TableHead className="w-[20%]">Téléphone</TableHead>
+                  <SortableTableHead field="email" type="text" direction={directionFor('email')} onSort={onSort} className="w-[25%]">Email</SortableTableHead>
+                  <TableHead className="w-[20%]">Adresse</TableHead>
+                  <TableHead className="w-[10%]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

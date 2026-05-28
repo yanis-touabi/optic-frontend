@@ -122,3 +122,15 @@
 .print-only {
   display: none;
 }
+
+/* Hide native spinners for number inputs globally */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+

@@ -231,15 +231,15 @@ export default function Ordonnances() {
         </div>
         <Card className="shadow-[var(--shadow-card)]">
           <CardContent className="p-0">
-            <Table>
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Client</TableHead>
-                  <SortableTableHead field="nomMedecin" type="text" direction={directionFor('nomMedecin')} onSort={onSort}>Médecin</SortableTableHead>
-                  <SortableTableHead field="datePrescription" type="date" direction={directionFor('datePrescription')} onSort={onSort}>Date prescription</SortableTableHead>
-                  <TableHead>OD (Sph/Cyl/Axe)</TableHead>
-                  <TableHead>OG (Sph/Cyl/Axe)</TableHead>
-                  <TableHead className="w-32"></TableHead>
+                  <TableHead className="w-[25%]">Client</TableHead>
+                  <SortableTableHead field="nomMedecin" type="text" direction={directionFor('nomMedecin')} onSort={onSort} className="w-[18%]">Médecin</SortableTableHead>
+                  <SortableTableHead field="datePrescription" type="date" direction={directionFor('datePrescription')} onSort={onSort} className="w-[18%]">Date prescription</SortableTableHead>
+                  <TableHead className="w-[15%]">OD (Sph/Cyl/Axe)</TableHead>
+                  <TableHead className="w-[15%]">OG (Sph/Cyl/Axe)</TableHead>
+                  <TableHead className="w-[9%]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

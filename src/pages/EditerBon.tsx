@@ -276,14 +276,14 @@ export default function EditerBon() {
 
               <StockAlert issues={stockIssues} />
 
-              <Table>
+              <Table className="table-fixed w-full">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Désignation</TableHead>
-                    <TableHead className="w-24">Qté</TableHead>
-                    <TableHead className="w-32">P.U.</TableHead>
-                    <TableHead className="w-32 text-right">Total</TableHead>
-                    <TableHead className="w-12"></TableHead>
+                    <TableHead className="w-[50%]">Désignation</TableHead>
+                    <TableHead className="w-[15%]">Qté</TableHead>
+                    <TableHead className="w-[15%]">P.U.</TableHead>
+                    <TableHead className="w-[15%] text-right">Total</TableHead>
+                    <TableHead className="w-[5%]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -311,10 +311,11 @@ export default function EditerBon() {
                           <Input
                             type="number"
                             min={1}
-                            value={l.quantite}
+                            placeholder="0"
+                            value={l.quantite || ''}
                             onChange={(e) =>
                               updateLigne(l.id, {
-                                quantite: Number(e.target.value),
+                                quantite: e.target.value === '' ? 0 : Number(e.target.value),
                               })
                             }
                             disabled={isLocked}
@@ -324,10 +325,11 @@ export default function EditerBon() {
                           <Input
                             type="number"
                             step="0.01"
-                            value={l.prixUnitaire}
+                            placeholder="0"
+                            value={l.prixUnitaire || ''}
                             onChange={(e) =>
                               updateLigne(l.id, {
-                                prixUnitaire: Number(e.target.value),
+                                prixUnitaire: e.target.value === '' ? 0 : Number(e.target.value),
                               })
                             }
                             disabled={isLocked}
