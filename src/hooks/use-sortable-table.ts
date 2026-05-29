@@ -28,6 +28,11 @@ export interface UseSortableTableReturn extends SortState {
 /**
  * Manages column-sort state for a server-side paginated table.
  *
+ * Supports a 3-click cycle per column:
+ *   1st click → sort by type-based default direction
+ *   2nd click → toggle direction
+ *   3rd click → reset to no sort (default order)
+ *
  * @param defaultSort  - Field to sort by on mount (optional)
  * @param defaultOrder - Direction to use for the default sort (optional)
  */
@@ -43,10 +48,17 @@ export function useSortableTable(
   const onSort = useCallback((field: string, type: ColumnType) => {
     setState((prev) => {
       if (prev.sort === field) {
-        // Same column → toggle direction
-        return { sort: field, order: prev.order === 'asc' ? 'desc' : 'asc' };
+        const currentDir = prev.order;
+        const typeDefault = defaultDirection(type);
+
+        if (currentDir === typeDefault) {
+          // 1st click was default dir → 2nd click: toggle
+          return { sort: field, order: typeDefault === 'asc' ? 'desc' : 'asc' };
+        }
+        // 2nd click was toggled dir → 3rd click: reset
+        return { sort: undefined, order: prev.order };
       }
-      // New column → use type-based default direction
+      // New column → sort by type-based default direction
       return { sort: field, order: defaultDirection(type) };
     });
   }, []);

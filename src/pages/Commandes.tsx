@@ -38,6 +38,7 @@ import {
   Download,
   Check,
   ChevronsUpDown,
+  CalendarClock,
 } from 'lucide-react';
 import { exportToCSV } from '@/lib/csv';
 import {
@@ -54,10 +55,15 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
-import { formatDZD, formatDateTime, formatDate, statutLabel } from '@/lib/format';
+import {
+  formatDZD,
+  formatDateTime,
+  formatDate,
+  statutLabel,
+} from '@/lib/format';
 import {
   useClients,
-  usePaginatedCommandes, // ✅ replaces useCommandes
+  usePaginatedCommandes,
   useDeleteCommande,
   useUpdateCommandeStatut,
   DEFAULT_PAGE_SIZE,
@@ -95,6 +101,15 @@ export default function Commandes() {
   const [dateTo, setDateTo] = useState(
     () => sessionStorage.getItem('commandes_dateTo') ?? '',
   );
+  const [deliveryPreset, setDeliveryPreset] = useState<string>(
+    () => sessionStorage.getItem('commandes_deliveryPreset') ?? 'ALL',
+  );
+  const [deliveryFrom, setDeliveryFrom] = useState(
+    () => sessionStorage.getItem('commandes_deliveryFrom') ?? '',
+  );
+  const [deliveryTo, setDeliveryTo] = useState(
+    () => sessionStorage.getItem('commandes_deliveryTo') ?? '',
+  );
   const [page, setPage] = useState(() => {
     const val = sessionStorage.getItem('commandes_page');
     return val ? Number(val) : 0;
@@ -121,16 +136,29 @@ export default function Commandes() {
     sessionStorage.setItem('commandes_clientId', clientId);
     sessionStorage.setItem('commandes_dateFrom', dateFrom);
     sessionStorage.setItem('commandes_dateTo', dateTo);
+    sessionStorage.setItem('commandes_deliveryPreset', deliveryPreset);
+    sessionStorage.setItem('commandes_deliveryFrom', deliveryFrom);
+    sessionStorage.setItem('commandes_deliveryTo', deliveryTo);
     sessionStorage.setItem('commandes_page', page.toString());
     sessionStorage.setItem('commandes_pageSize', pageSize.toString());
-  }, [q, statut, clientId, dateFrom, dateTo, page, pageSize]);
+  }, [
+    q,
+    statut,
+    clientId,
+    dateFrom,
+    dateTo,
+    deliveryPreset,
+    deliveryFrom,
+    deliveryTo,
+    page,
+    pageSize,
+  ]);
 
   useEffect(() => {
     if (sort) sessionStorage.setItem('commandes_sort', sort);
     if (order) sessionStorage.setItem('commandes_order', order);
   }, [sort, order]);
 
-  // ✅ Server-side filtering & pagination — no more fetching 10,000 records
   const { data, isLoading } = usePaginatedCommandes({
     page,
     size: pageSize,
@@ -139,6 +167,11 @@ export default function Commandes() {
     clientId: clientId === 'ALL' ? undefined : clientId,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
+    deliveryPreset: deliveryPreset !== 'ALL' ? deliveryPreset : undefined,
+    deliveryFrom:
+      deliveryPreset === 'CUSTOM' ? deliveryFrom || undefined : undefined,
+    deliveryTo:
+      deliveryPreset === 'CUSTOM' ? deliveryTo || undefined : undefined,
     sort,
     order,
   });
@@ -153,10 +186,18 @@ export default function Commandes() {
     setClientId('ALL');
     setDateFrom('');
     setDateTo('');
+    setDeliveryPreset('ALL');
+    setDeliveryFrom('');
+    setDeliveryTo('');
     setPage(0);
   };
   const hasFilters =
-    q || statut !== 'ALL' || clientId !== 'ALL' || dateFrom || dateTo;
+    q ||
+    statut !== 'ALL' ||
+    clientId !== 'ALL' ||
+    dateFrom ||
+    dateTo ||
+    deliveryPreset !== 'ALL';
 
   const remove = async (id: string) => {
     if (!confirm('Supprimer ce bon ?')) return;
@@ -341,9 +382,62 @@ export default function Commandes() {
           </div>
         </div>
 
+        {/* Delivery date filter row */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <CalendarClock className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground whitespace-nowrap">
+              Livraison prévue :
+            </span>
+          </div>
+          <Select
+            value={deliveryPreset}
+            onValueChange={(v) => {
+              setDeliveryPreset(v);
+              setPage(0);
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Toutes les livraisons</SelectItem>
+              <SelectItem value="today">Aujourd'hui</SelectItem>
+              <SelectItem value="week">Cette semaine</SelectItem>
+              <SelectItem value="month">Ce mois</SelectItem>
+              <SelectItem value="overdue">En retard</SelectItem>
+              <SelectItem value="CUSTOM">Personnalisé</SelectItem>
+            </SelectContent>
+          </Select>
+          {deliveryPreset === 'CUSTOM' && (
+            <>
+              <Input
+                type="date"
+                value={deliveryFrom}
+                onChange={(e) => {
+                  setDeliveryFrom(e.target.value);
+                  setPage(0);
+                }}
+                className="w-[160px]"
+                placeholder="Du"
+              />
+              <Input
+                type="date"
+                value={deliveryTo}
+                onChange={(e) => {
+                  setDeliveryTo(e.target.value);
+                  setPage(0);
+                }}
+                className="w-[160px]"
+                placeholder="Au"
+              />
+            </>
+          )}
+        </div>
+
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            {totalElements} résultat(s) {/* ✅ from server, always accurate */}
+            {totalElements} résultat(s)
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Afficher</span>
@@ -392,7 +486,15 @@ export default function Commandes() {
                   >
                     Date
                   </SortableTableHead>
-                  <TableHead className="text-center w-[13%]">Livraison prévue</TableHead>
+                  <SortableTableHead
+                    field="dateLivraisonPrevue"
+                    type="date"
+                    direction={directionFor('dateLivraisonPrevue')}
+                    onSort={onSort}
+                    className="text-center w-[13%]"
+                  >
+                    Livraison prévue
+                  </SortableTableHead>
                   <SortableTableHead
                     field="statut"
                     type="text"

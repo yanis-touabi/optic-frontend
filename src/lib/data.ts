@@ -313,6 +313,9 @@ export const usePaginatedCommandes = (params: {
   clientId?: string;
   dateFrom?: string;
   dateTo?: string;
+  deliveryPreset?: string;
+  deliveryFrom?: string;
+  deliveryTo?: string;
   sort?: string;
   order?: 'asc' | 'desc';
 }) =>
