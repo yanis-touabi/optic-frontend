@@ -67,6 +67,13 @@ export default function NouveauBon() {
   // Default to first client if not chosen yet - not needed for infinite scroll select
   const effectiveClientId = clientId || '';
 
+  // When client changes, clear any previously selected ordonnance so it is
+  // not incorrectly linked to the new client's bon de commande.
+  const handleClientChange = (newClientId: string) => {
+    setClientId(newClientId);
+    setOrdonnanceId('none');
+  };
+
   const total = useMemo(
     () => lignes.reduce((s, l) => s + l.quantite * l.prixUnitaire, 0),
     [lignes],
@@ -181,7 +188,7 @@ export default function NouveauBon() {
             <CardContent className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <Label>Client *</Label>
-                <ClientSelect value={clientId} onChange={setClientId} />
+                <ClientSelect value={clientId} onChange={handleClientChange} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label>Ordonnance</Label>

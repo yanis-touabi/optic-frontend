@@ -22,7 +22,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
-import { formatDZD } from '@/lib/format';
+import { formatDZD, toInputDate } from '@/lib/format';
 import {
   useCommande,
   useProduits,
@@ -63,7 +63,7 @@ export default function EditerBon() {
       })),
     );
     setNotes(cmd.notes);
-    setDateLivraison(cmd.dateLivraisonPrevue ?? '');
+    setDateLivraison(toInputDate(cmd.dateLivraisonPrevue));
   }, [cmd]);
 
   // Removed ordonnancesClient query

@@ -35,7 +35,7 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 import { Plus, Pencil, Trash2, Printer, Loader2, Search } from 'lucide-react';
-import { formatDate } from '@/lib/format';
+import { formatDate, toInputDate } from '@/lib/format';
 import {
   usePaginatedOrdonnances,
   useCreateOrdonnance,
@@ -100,8 +100,8 @@ export default function Ordonnances() {
     setEditing(o);
     setForm({
       clientId: o.clientId ?? '',
-      datePrescription: o.datePrescription ?? '',
-      dateExpiration: o.dateExpiration ?? '',
+      datePrescription: toInputDate(o.datePrescription),
+      dateExpiration: toInputDate(o.dateExpiration),
       nomMedecin: o.nomMedecin ?? '',
       notes: o.notes ?? '',
       odSphere: o.odSphere,

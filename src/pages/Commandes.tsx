@@ -54,7 +54,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
-import { formatDZD, formatDateTime, statutLabel } from '@/lib/format';
+import { formatDZD, formatDateTime, formatDate, statutLabel } from '@/lib/format';
 import {
   useClients,
   usePaginatedCommandes, // ✅ replaces useCommandes
@@ -378,26 +378,27 @@ export default function Commandes() {
                     type="number"
                     direction={directionFor('numero')}
                     onSort={onSort}
-                    className="w-[10%]"
+                    className="w-[8%]"
                   >
                     N°
                   </SortableTableHead>
-                  <TableHead className="w-[20%]">Client</TableHead>
+                  <TableHead className="w-[18%]">Client</TableHead>
                   <SortableTableHead
                     field="createdAt"
                     type="date"
                     direction={directionFor('createdAt')}
                     onSort={onSort}
-                    className="text-center w-[20%]"
+                    className="text-center w-[14%]"
                   >
                     Date
                   </SortableTableHead>
+                  <TableHead className="text-center w-[13%]">Livraison prévue</TableHead>
                   <SortableTableHead
                     field="statut"
                     type="text"
                     direction={directionFor('statut')}
                     onSort={onSort}
-                    className="text-center w-[20%]"
+                    className="text-center w-[18%]"
                   >
                     Statut
                   </SortableTableHead>
@@ -406,7 +407,7 @@ export default function Commandes() {
                     type="number"
                     direction={directionFor('montantTotal')}
                     onSort={onSort}
-                    className="text-center w-[15%]"
+                    className="text-center w-[14%]"
                   >
                     Montant
                   </SortableTableHead>
@@ -416,14 +417,14 @@ export default function Commandes() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
                       <Loader2 className="h-5 w-5 animate-spin inline" />
                     </TableCell>
                   </TableRow>
                 ) : commandes.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={7}
                       className="text-center text-muted-foreground py-8"
                     >
                       Aucun bon de commande
@@ -442,6 +443,9 @@ export default function Commandes() {
                         </TableCell>
                         <TableCell className="text-center text-muted-foreground">
                           {formatDateTime(c.createdAt)}
+                        </TableCell>
+                        <TableCell className="text-center text-muted-foreground">
+                          {formatDate(c.dateLivraisonPrevue)}
                         </TableCell>
                         <TableCell>
                           <div className="flex justify-center">
