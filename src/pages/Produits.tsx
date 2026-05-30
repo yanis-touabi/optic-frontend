@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,6 +47,7 @@ import {
   TrendingUp,
   TrendingDown,
   Package,
+  AlertTriangle,
 } from 'lucide-react';
 import { exportToCSV } from '@/lib/csv';
 import { formatDZD } from '@/lib/format';
@@ -147,21 +149,40 @@ async function downloadBarcode(produitId: string, nom: string) {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function Produits() {
+  const [searchParams] = useSearchParams();
+  const stockAlertParam = searchParams.get('stockAlert') === 'true';
+  const sortParam = searchParams.get('sort') ?? undefined;
+  const orderParam = (searchParams.get('order') ?? 'asc') as 'asc' | 'desc';
+
   const [q, setQ] = useState('');
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [catFilter, setCatFilter] = useState<CatFilter>('ALL');
+  const [stockAlertFilter, setStockAlertFilter] = useState(stockAlertParam);
   const debouncedSearch = useDebounce(q, 300);
 
-  const { sort, order, onSort, directionFor } = useSortableTable('nom', 'asc');
+  const { sort, order, onSort, directionFor } = useSortableTable(
+    sortParam ?? 'nom',
+    sortParam ? orderParam : 'asc',
+  );
+
+  // Sync stockAlert flag when URL param changes (e.g. back-navigation)
+  useEffect(() => {
+    setStockAlertFilter(stockAlertParam);
+  }, [stockAlertParam]);
+
+  // When stockAlert filter is on, override the search with stock<=2 equivalent.
+  // The backend sorts by stock asc so low/zero items surface first.
+  const effectiveSort = stockAlertFilter ? 'stock' : sort;
+  const effectiveOrder = stockAlertFilter ? 'asc' : order;
 
   const { data, isLoading } = usePaginatedProduits({
     page,
     size: pageSize,
     q: debouncedSearch,
     categorie: catFilter === 'ALL' ? undefined : catFilter,
-    sort,
-    order,
+    sort: effectiveSort,
+    order: effectiveOrder,
   });
 
   const createMut = useCreateProduit();
@@ -326,6 +347,21 @@ export default function Produits() {
         }
       />
       <div className="p-8 space-y-4">
+        {/* ── Stock alert banner ── */}
+        {stockAlertFilter && (
+          <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50/70 dark:bg-red-950/20 dark:border-red-900/50 px-4 py-2.5">
+            <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
+            <span className="text-sm font-medium text-red-700 dark:text-red-400">
+              Filtre actif : produits triés par stock croissant (stock faible en premier)
+            </span>
+            <button
+              onClick={() => setStockAlertFilter(false)}
+              className="ml-auto text-xs text-red-600 hover:text-red-800 dark:text-red-400 font-semibold underline underline-offset-2"
+            >
+              Effacer le filtre
+            </button>
+          </div>
+        )}
         {/* ── Search + category tabs + page size ── */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Search */}
