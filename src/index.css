@@ -117,6 +117,14 @@
   .print-area {
     box-shadow: none !important;
     border: none !important;
+    width: 100% !important;
+    min-height: auto !important;
+    padding: 0 2px !important; /* Tiny 2px safety padding prevents border-collapse clipping */
+    margin: 0 !important;
+  }
+  .print-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
   }
 }
 .print-only {

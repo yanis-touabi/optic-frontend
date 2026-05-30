@@ -147,7 +147,7 @@ export default function ImprimerOrdonnance() {
             transformOrigin: 'top center',
             width: '210mm',
           }}
-          className="print:!transform-none"
+          className="print:!transform-none print-wrapper"
         >
           <div
             ref={printRef}

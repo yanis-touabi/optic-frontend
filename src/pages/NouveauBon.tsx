@@ -21,7 +21,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Trash2, Printer, Loader2, Check, ChevronsUpDown } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  Printer,
+  Loader2,
+  Check,
+  ChevronsUpDown,
+} from 'lucide-react';
 import { formatDZD } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import {
@@ -39,10 +46,7 @@ import {
 } from '@/components/ui/command';
 import { ClientSelect } from '@/components/ClientSelect';
 import { OrdonnanceSelect } from '@/components/OrdonnanceSelect';
-import {
-  useProduits,
-  useCreateCommande,
-} from '@/lib/data';
+import { useProduits, useCreateCommande } from '@/lib/data';
 import type { LigneCommande } from '@/lib/types';
 import { checkStock } from '@/lib/stock-validation';
 import { StockAlert } from '@/components/StockAlert';
@@ -54,6 +58,14 @@ export default function NouveauBon() {
   const { data: produits = [] } = useProduits();
   const createMut = useCreateCommande();
   const nav = useNavigate();
+
+  const todayStr = useMemo(() => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }, []);
 
   const [clientId, setClientId] = useState('');
   const [ordonnanceId, setOrdonnanceId] = useState<string>('none');
@@ -127,6 +139,11 @@ export default function NouveauBon() {
   const save = async (printAfter: boolean) => {
     if (!effectiveClientId) return toast.error('Sélectionnez un client');
     if (lignes.length === 0) return toast.error('Ajoutez au moins un produit');
+    if (dateLivraison && dateLivraison < todayStr) {
+      return toast.error(
+        "La date de livraison prévue doit être supérieure ou égale à aujourd'hui",
+      );
+    }
     if (stockIssues.length > 0) {
       return toast.error(
         "Stock insuffisant — corrigez les quantités avant d'enregistrer",
@@ -192,10 +209,10 @@ export default function NouveauBon() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label>Ordonnance</Label>
-                <OrdonnanceSelect 
-                  clientId={effectiveClientId} 
-                  value={ordonnanceId} 
-                  onChange={setOrdonnanceId} 
+                <OrdonnanceSelect
+                  clientId={effectiveClientId}
+                  value={ordonnanceId}
+                  onChange={setOrdonnanceId}
                 />
               </div>
               <div>
@@ -203,6 +220,7 @@ export default function NouveauBon() {
                 <Input
                   type="date"
                   value={dateLivraison}
+                  min={todayStr}
                   onChange={(e) => setDateLivraison(e.target.value)}
                 />
               </div>
@@ -247,7 +265,9 @@ export default function NouveauBon() {
                               <Check
                                 className={cn(
                                   'mr-2 h-4 w-4',
-                                  pickProduit === p.id ? 'opacity-100' : 'opacity-0',
+                                  pickProduit === p.id
+                                    ? 'opacity-100'
+                                    : 'opacity-0',
                                 )}
                               />
                               <div className="flex flex-col">
@@ -309,7 +329,10 @@ export default function NouveauBon() {
                             value={l.quantite || ''}
                             onChange={(e) =>
                               updateLigne(l.id, {
-                                quantite: e.target.value === '' ? 0 : Number(e.target.value),
+                                quantite:
+                                  e.target.value === ''
+                                    ? 0
+                                    : Number(e.target.value),
                               })
                             }
                           />
@@ -322,7 +345,10 @@ export default function NouveauBon() {
                             value={l.prixUnitaire || ''}
                             onChange={(e) =>
                               updateLigne(l.id, {
-                                prixUnitaire: e.target.value === '' ? 0 : Number(e.target.value),
+                                prixUnitaire:
+                                  e.target.value === ''
+                                    ? 0
+                                    : Number(e.target.value),
                               })
                             }
                           />
