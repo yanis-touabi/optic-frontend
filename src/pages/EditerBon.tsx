@@ -7,13 +7,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Table,
   TableBody,
   TableCell,
@@ -21,8 +14,22 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Loader2, Check, ChevronsUpDown } from 'lucide-react';
 import { formatDZD, toInputDate } from '@/lib/format';
+import { cn } from '@/lib/utils';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import {
   useCommande,
   useProduits,
@@ -48,6 +55,7 @@ export default function EditerBon() {
   const [notes, setNotes] = useState('');
   const [dateLivraison, setDateLivraison] = useState('');
   const [pickProduit, setPickProduit] = useState('');
+  const [produitOpen, setProduitOpen] = useState(false);
 
   useEffect(() => {
     if (!cmd) return;
@@ -252,22 +260,57 @@ export default function EditerBon() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2">
-                <Select
-                  value={pickProduit}
-                  onValueChange={setPickProduit}
-                  disabled={isLocked}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Choisir un produit..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {produits.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.nom} — {formatDZD(p.prix)} (stock : {p.stock})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={produitOpen} onOpenChange={setProduitOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={produitOpen}
+                      className="flex-1 justify-between font-normal"
+                      disabled={isLocked}
+                    >
+                      {pickProduit
+                        ? effectiveProduits.find((p) => p.id === pickProduit)?.nom
+                        : 'Choisir un produit...'}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[400px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Rechercher un produit..." />
+                      <CommandList>
+                        <CommandEmpty>Aucun produit trouvé.</CommandEmpty>
+                        <CommandGroup>
+                          {effectiveProduits.map((p) => (
+                            <CommandItem
+                              key={p.id}
+                              value={`${p.nom} ${p.marque || ''} ${p.sku || ''}`}
+                              onSelect={() => {
+                                setPickProduit(p.id);
+                                setProduitOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  pickProduit === p.id
+                                    ? 'opacity-100'
+                                    : 'opacity-0',
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span>{p.nom}</span>
+                                <span className="text-[10px] text-muted-foreground">
+                                  {formatDZD(p.prix)} — Stock : {p.stock}{p.sku ? ` — SKU : ${p.sku}` : ''}
+                                </span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <Button onClick={addLigne} disabled={!pickProduit || isLocked}>
                   <Plus className="h-4 w-4" />
                   Ajouter

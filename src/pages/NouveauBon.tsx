@@ -256,7 +256,7 @@ export default function NouveauBon() {
                           {produits.map((p) => (
                             <CommandItem
                               key={p.id}
-                              value={`${p.nom} ${p.marque}`}
+                              value={`${p.nom} ${p.marque || ''} ${p.sku || ''}`}
                               onSelect={() => {
                                 setPickProduit(p.id);
                                 setProduitOpen(false);
@@ -273,7 +273,7 @@ export default function NouveauBon() {
                               <div className="flex flex-col">
                                 <span>{p.nom}</span>
                                 <span className="text-[10px] text-muted-foreground">
-                                  {formatDZD(p.prix)} — Stock : {p.stock}
+                                  {formatDZD(p.prix)} — Stock : {p.stock}{p.sku ? ` — SKU : ${p.sku}` : ''}
                                 </span>
                               </div>
                             </CommandItem>
