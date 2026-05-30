@@ -656,7 +656,7 @@ export default function Dashboard() {
             </div>
 
             {/* ── BOTTOM ROW ── */}
-            <div className="grid gap-4 lg:grid-cols-3 items-start">
+            <div className="grid gap-4 lg:grid-cols-3">
               {/* Left 2/3: Recent orders */}
               <Card className="lg:col-span-2 shadow-[var(--shadow-card)]">
                 <CardHeader className="flex-row items-center justify-between pb-2">
@@ -678,7 +678,7 @@ export default function Dashboard() {
                         <Link
                           key={c.id}
                           to={`/commandes/${c.id}/imprimer`}
-                          className="flex items-center justify-between py-3 hover:bg-muted/40 -mx-2 px-2 rounded-lg transition-colors group"
+                          className="flex items-center justify-between py-4 hover:bg-muted/40 -mx-2 px-2 rounded-lg transition-colors group"
                         >
                           <div className="min-w-0 flex-1">
                             <div className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
@@ -705,7 +705,7 @@ export default function Dashboard() {
               </Card>
 
               {/* Right 1/3: Activité en cours + Top 5 */}
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 h-full">
                 {/* Activité en cours */}
                 <Card className="shadow-[var(--shadow-card)]">
                   <CardHeader className="pb-2">
@@ -752,7 +752,7 @@ export default function Dashboard() {
                 </Card>
 
                 {/* ── TOP 5 BEST-SELLING PRODUCTS ── */}
-                <Card className="shadow-[var(--shadow-card)]">
+                <Card className="shadow-[var(--shadow-card)] flex-1">
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
