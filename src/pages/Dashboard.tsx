@@ -25,6 +25,7 @@ import {
   Package,
   Activity,
   PackageX,
+  Eye,
 } from 'lucide-react';
 import {
   BarChart,
@@ -138,7 +139,7 @@ function CaChartCard({
     <Card className="lg:col-span-2 shadow-[var(--shadow-card)]">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2 flex-wrap">
-          <CardTitle className="text-base">CA &amp; Marge brute</CardTitle>
+          <CardTitle className="text-base">CA & Marge brute</CardTitle>
           <div className="flex items-center gap-1 bg-muted rounded-lg p-1 flex-wrap">
             {CA_PRESETS.map((p) => (
               <button
@@ -856,20 +857,21 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Stock Alerts — inside Aperçu du stock */}
-                <div className={`rounded-xl border overflow-hidden ${hasStockAlerts ? 'border-red-200 dark:border-red-900/50' : 'border-green-200 dark:border-green-900/50'}`}>
-                  <div className={`flex items-center justify-between px-4 py-2.5 ${hasStockAlerts ? 'bg-red-50/80 dark:bg-red-950/20' : 'bg-green-50/80 dark:bg-green-950/20'}`}>
+                {/* ── ALERTES STOCK (Redesigned) ── */}
+                <div className="rounded-xl border border-border overflow-hidden">
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30">
                     <div className="flex items-center gap-2">
                       {hasStockAlerts ? (
-                        <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                        <AlertTriangle className="h-4 w-4 text-red-500" />
                       ) : (
-                        <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
                       )}
-                      <span className={`text-sm font-semibold ${hasStockAlerts ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>
+                      <span className="text-sm font-semibold">
                         {hasStockAlerts ? 'Alertes stock' : 'Stock en bonne santé'}
                       </span>
                       {hasStockAlerts && (
-                        <span className="text-[10px] font-bold bg-red-500 text-white rounded-full px-1.5 py-0.5 leading-none">
+                        <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
                           {outOfStock.length + lowStock.length}
                         </span>
                       )}
@@ -877,63 +879,88 @@ export default function Dashboard() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 px-2 text-xs"
+                      className="h-7 px-2 text-xs gap-1"
                       onClick={() => navigate('/produits?stockAlert=true')}
                     >
-                      Gérer <ArrowRight className="h-3 w-3 ml-1" />
+                      Gérer <ArrowRight className="h-3 w-3" />
                     </Button>
                   </div>
 
-                  {hasStockAlerts && (
-                    <div className="px-4 py-3 bg-white/50 dark:bg-background/30 space-y-3">
+                  {/* Alerts body */}
+                  {hasStockAlerts ? (
+                    <div className="divide-y divide-border">
+                      {/* Out of stock section */}
                       {outOfStock.length > 0 && (
                         <div>
-                          <div className="flex items-center gap-1.5 mb-2">
-                            <PackageX className="h-3.5 w-3.5 text-red-500" />
-                            <span className="text-xs font-semibold text-red-600 dark:text-red-400">
-                              Stock épuisé ({outOfStock.length})
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {outOfStock.map((p) => (
-                              <span
-                                key={p.id}
-                                className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"
-                              >
-                                {p.nom}
-                                <span className="bg-red-200 dark:bg-red-800 rounded-full px-1 leading-none font-bold text-[10px]">0</span>
+                          <div className="px-4 py-2 bg-red-50/50 dark:bg-red-950/10">
+                            <div className="flex items-center gap-1.5">
+                              <PackageX className="h-3.5 w-3.5 text-red-500" />
+                              <span className="text-xs font-semibold text-red-600 dark:text-red-400">
+                                Stock épuisé
                               </span>
+                              <span className="ml-auto text-[10px] text-muted-foreground">
+                                {outOfStock.length} produit{outOfStock.length > 1 ? 's' : ''}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="px-4 py-1.5 space-y-0.5">
+                            {outOfStock.map((p) => (
+                              <div
+                                key={p.id}
+                                className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-red-50/80 dark:hover:bg-red-950/20 transition-colors group cursor-pointer"
+                                onClick={() => navigate(`/produits?id=${p.id}`)}
+                              >
+                                <span className="h-2 w-2 rounded-full bg-red-500 flex-shrink-0" />
+                                <span className="text-xs font-medium truncate flex-1">{p.nom}</span>
+                                <span className="text-[10px] font-bold text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400 px-1.5 py-0.5 rounded-md flex-shrink-0">
+                                  0 en stock
+                                </span>
+                                <Eye className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                              </div>
                             ))}
                           </div>
                         </div>
                       )}
+
+                      {/* Low stock section */}
                       {lowStock.length > 0 && (
                         <div>
-                          <div className="flex items-center gap-1.5 mb-2">
-                            <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
-                              Stock critique ≤ 2 ({lowStock.length})
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {lowStock.map((p) => (
-                              <span
-                                key={p.id}
-                                className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800"
-                              >
-                                {p.nom}
-                                <span className="bg-amber-200 dark:bg-amber-800 rounded-full px-1 leading-none font-bold text-[10px]">{p.stock}</span>
+                          <div className="px-4 py-2 bg-amber-50/50 dark:bg-amber-950/10">
+                            <div className="flex items-center gap-1.5">
+                              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                              <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                                Stock critique
                               </span>
+                              <span className="ml-auto text-[10px] text-muted-foreground">
+                                {lowStock.length} produit{lowStock.length > 1 ? 's' : ''}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="px-4 py-1.5 space-y-0.5">
+                            {lowStock.map((p) => (
+                              <div
+                                key={p.id}
+                                className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-amber-50/80 dark:hover:bg-amber-950/20 transition-colors group cursor-pointer"
+                                onClick={() => navigate(`/produits?id=${p.id}`)}
+                              >
+                                <span className="h-2 w-2 rounded-full bg-amber-400 flex-shrink-0" />
+                                <span className="text-xs font-medium truncate flex-1">{p.nom}</span>
+                                <span className="text-[10px] font-bold text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-md flex-shrink-0">
+                                  {p.stock} en stock
+                                </span>
+                                <Eye className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                              </div>
                             ))}
                           </div>
                         </div>
                       )}
                     </div>
-                  )}
-
-                  {!hasStockAlerts && (
-                    <div className="px-4 py-3 bg-white/50 dark:bg-background/30">
-                      <p className="text-xs text-muted-foreground">Tous les produits ont un stock suffisant.</p>
+                  ) : (
+                    <div className="px-4 py-4">
+                      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <span>Tous les produits ont un stock suffisant.</span>
+                      </div>
                     </div>
                   )}
                 </div>
