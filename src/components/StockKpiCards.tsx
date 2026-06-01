@@ -71,7 +71,10 @@ export function StockKpiCards({ produits }: StockKpiCardsProps) {
                     {count}
                   </div>
                   <div className="text-xs text-muted-foreground font-medium mt-0.5">
-                    {config.label}
+                    {config.label} ·{' '}
+                    <span className="text-[10px] text-muted-foreground/70">
+                      {config.thresholdDescription}
+                    </span>
                   </div>
                 </div>
               </div>

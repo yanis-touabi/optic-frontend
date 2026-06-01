@@ -44,6 +44,7 @@ export const STOCK_THRESHOLDS: StockThresholdConfig[] = [
     bgColor: 'bg-green-100 dark:bg-green-900/30',
     lightBg: 'bg-green-50/50 dark:bg-green-950/10',
     severity: 'success',
+    thresholdDescription: 'Stock > 10 unités',
   },
   {
     status: 'limite',
@@ -55,6 +56,7 @@ export const STOCK_THRESHOLDS: StockThresholdConfig[] = [
     bgColor: 'bg-amber-100 dark:bg-amber-900/30',
     lightBg: 'bg-amber-50/50 dark:bg-amber-950/10',
     severity: 'warning',
+    thresholdDescription: ' 3 =< Stock <= 10',
   },
   {
     status: 'critique',
@@ -66,6 +68,7 @@ export const STOCK_THRESHOLDS: StockThresholdConfig[] = [
     bgColor: 'bg-red-100 dark:bg-red-900/30',
     lightBg: 'bg-red-50/50 dark:bg-red-950/10',
     severity: 'danger',
+    thresholdDescription: '1 =< Stock <= 2',
   },
   {
     status: 'epuise',
@@ -77,6 +80,7 @@ export const STOCK_THRESHOLDS: StockThresholdConfig[] = [
     bgColor: 'bg-red-200 dark:bg-red-900/50',
     lightBg: 'bg-red-50/80 dark:bg-red-950/20',
     severity: 'critical',
+    thresholdDescription: 'Stock = 0 unité',
   },
 ] as const;
 

@@ -445,7 +445,7 @@ export default function Produits() {
               setPage(0);
             }}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[260px]">
               <SelectValue placeholder="Filtrer par stock" />
             </SelectTrigger>
             <SelectContent>
@@ -456,7 +456,10 @@ export default function Produits() {
                     <span
                       className={`h-2 w-2 rounded-full ${config.color.replace('text-', 'bg-').split(' ')[0]}`}
                     />
-                    {config.label}
+                    {config.label} ·{' '}
+                    <span className="text-[10px] text-muted-foreground/70">
+                      {config.thresholdDescription}
+                    </span>
                   </span>
                 </SelectItem>
               ))}
