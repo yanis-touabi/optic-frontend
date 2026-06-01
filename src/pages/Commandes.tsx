@@ -39,6 +39,7 @@ import {
   Check,
   ChevronsUpDown,
   CalendarClock,
+  Eye,
 } from 'lucide-react';
 import { exportToCSV } from '@/lib/csv';
 import {
@@ -584,6 +585,16 @@ export default function Commandes() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            {/* View button — navigates to dedicated detail page */}
+                            <Button asChild size="icon" variant="ghost">
+                              <Link
+                                to={`/commandes/${c.id}`}
+                                aria-label="Voir la commande"
+                                title="Voir les détails"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Link>
+                            </Button>
                             <Button
                               asChild
                               size="icon"

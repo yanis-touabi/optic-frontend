@@ -34,7 +34,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { Plus, Pencil, Trash2, Printer, Loader2, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Printer, Loader2, Search, Eye } from 'lucide-react';
+import { OrdonnanceDetailDrawer } from '@/components/views/OrdonnanceDetailDrawer';
 import { formatDate, toInputDate } from '@/lib/format';
 import {
   usePaginatedOrdonnances,
@@ -90,6 +91,15 @@ export default function Ordonnances() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Ordonnance | null>(null);
   const [form, setForm] = useState<Form>(empty);
+
+  // ── View (read-only) state ──
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewingOrd, setViewingOrd] = useState<Ordonnance | null>(null);
+
+  const openView = (o: Ordonnance) => {
+    setViewingOrd(o);
+    setViewOpen(true);
+  };
 
   const openNew = () => {
     setEditing(null);
@@ -278,6 +288,15 @@ export default function Ordonnances() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              aria-label="Voir l'ordonnance"
+                              title="Voir les détails"
+                              onClick={() => openView(o)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
                             <Button
                               size="icon"
                               variant="ghost"
@@ -576,6 +595,13 @@ export default function Ordonnances() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── View / Detail Drawer ── */}
+      <OrdonnanceDetailDrawer
+        open={viewOpen}
+        onOpenChange={setViewOpen}
+        ordonnance={viewingOrd}
+      />
     </>
   );
 }

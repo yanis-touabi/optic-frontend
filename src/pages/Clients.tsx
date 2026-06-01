@@ -34,7 +34,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { Plus, Pencil, Trash2, Search, Loader2, Download } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Loader2, Download, Eye } from 'lucide-react';
+import { ClientDetailDrawer } from '@/components/views/ClientDetailDrawer';
 import { exportToCSV } from '@/lib/csv';
 import type { Client } from '@/lib/types';
 import {
@@ -82,6 +83,15 @@ export default function Clients() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
   const [form, setForm] = useState(empty);
+
+  // ── View (read-only) state ──
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewingClient, setViewingClient] = useState<Client | null>(null);
+
+  const openView = (c: Client) => {
+    setViewingClient(c);
+    setViewOpen(true);
+  };
 
   const clients = data?.content ?? [];
   const totalPages = data?.totalPages ?? 1;
@@ -262,6 +272,16 @@ export default function Clients() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          {/* View button — read-only drawer */}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-label="Voir le client"
+                            title="Voir les détails"
+                            onClick={() => openView(c)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                           <Button
                             size="icon"
                             variant="ghost"
@@ -396,6 +416,13 @@ export default function Clients() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── View / Detail Drawer ── */}
+      <ClientDetailDrawer
+        open={viewOpen}
+        onOpenChange={setViewOpen}
+        client={viewingClient}
+      />
     </>
   );
 }

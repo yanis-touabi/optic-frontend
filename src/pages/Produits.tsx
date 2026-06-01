@@ -51,7 +51,9 @@ import {
   CheckCircle2,
   Ban,
   PackageX,
+  Eye,
 } from 'lucide-react';
+import { ProduitDetailModal } from '@/components/views/ProduitDetailModal';
 import { exportToCSV } from '@/lib/csv';
 import { formatDZD } from '@/lib/format';
 import {
@@ -229,6 +231,15 @@ export default function Produits() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Produit | null>(null);
   const [form, setForm] = useState<FormState>(empty);
+
+  // ── View (read-only) state ──
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewing, setViewing] = useState<Produit | null>(null);
+
+  const openView = (p: Produit) => {
+    setViewing(p);
+    setViewOpen(true);
+  };
 
   // Stock filter is now handled server-side via the ?stock= query param
   const produits = data?.content ?? [];
@@ -633,6 +644,16 @@ export default function Produits() {
                               <Barcode className="h-4 w-4" />
                             </Button>
                           )}
+                          {/* View button — read-only modal */}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-label="Voir le produit"
+                            title="Voir les détails"
+                            onClick={() => openView(p)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                           <Button
                             size="icon"
                             variant="ghost"
@@ -1059,6 +1080,13 @@ export default function Produits() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── View / Detail Modal ── */}
+      <ProduitDetailModal
+        open={viewOpen}
+        onOpenChange={setViewOpen}
+        produit={viewing}
+      />
     </>
   );
 }

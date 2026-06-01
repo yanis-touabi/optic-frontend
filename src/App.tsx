@@ -13,6 +13,7 @@ import Ordonnances from './pages/Ordonnances';
 import Commandes from './pages/Commandes';
 import NouveauBon from './pages/NouveauBon';
 import EditerBon from './pages/EditerBon';
+import CommandeDetail from './pages/CommandeDetail';
 import ImprimerBon from './pages/ImprimerBon';
 import ImprimerOrdonnance from './pages/ImprimerOrdonnance';
 import Auth from './pages/Auth';
@@ -82,6 +83,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requireRole="ADMIN">
                     <NouveauBon />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/commandes/:id"
+                element={
+                  <ProtectedRoute requireRole="ADMIN">
+                    <CommandeDetail />
                   </ProtectedRoute>
                 }
               />
