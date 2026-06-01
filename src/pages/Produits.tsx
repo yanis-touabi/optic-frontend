@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -48,9 +48,19 @@ import {
   TrendingDown,
   Package,
   AlertTriangle,
+  CheckCircle2,
+  Ban,
+  PackageX,
 } from 'lucide-react';
 import { exportToCSV } from '@/lib/csv';
 import { formatDZD } from '@/lib/format';
+import {
+  STOCK_THRESHOLDS,
+  stockFilterPredicate,
+  stockStatusFromQuery,
+  getStockConfig,
+  type StockStatus,
+} from '@/lib/stock-thresholds';
 import {
   usePaginatedProduits,
   useCreateProduit,
@@ -67,7 +77,10 @@ import { apiClient } from '@/api/apiClient';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-type FormState = Omit<Produit, 'id' | 'createdAt' | 'profitAmount' | 'profitMargin' | 'prix' | 'stock'> & {
+type FormState = Omit<
+  Produit,
+  'id' | 'createdAt' | 'profitAmount' | 'profitMargin' | 'prix' | 'stock'
+> & {
   prix?: number;
   stock?: number;
   barcodeMode: 'none' | 'auto' | 'custom';
@@ -97,13 +110,16 @@ const catLabel: Record<ProduitCategorie, string> = {
 };
 
 const catColors: Record<ProduitCategorie, string> = {
-  MONTURE: 'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300',
-  VERRE: 'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300',
-  ACCESSOIRE: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300',
+  MONTURE:
+    'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300',
+  VERRE:
+    'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300',
+  ACCESSOIRE:
+    'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300',
 };
 
 const ALL_CATS = ['ALL', 'MONTURE', 'VERRE', 'ACCESSOIRE'] as const;
-type CatFilter = typeof ALL_CATS[number];
+type CatFilter = (typeof ALL_CATS)[number];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -117,11 +133,15 @@ function MarginBadge({ margin }: { margin?: number }) {
         good
           ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400'
           : ok
-          ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400'
-          : 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400'
+            ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400'
+            : 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400'
       }`}
     >
-      {good ? <TrendingUp className="h-2.5 w-2.5" /> : ok ? null : <TrendingDown className="h-2.5 w-2.5" />}
+      {good ? (
+        <TrendingUp className="h-2.5 w-2.5" />
+      ) : ok ? null : (
+        <TrendingDown className="h-2.5 w-2.5" />
+      )}
       {margin.toFixed(1)}%
     </span>
   );
@@ -132,7 +152,9 @@ async function downloadBarcode(produitId: string, nom: string) {
     const response = await apiClient.get(`/products/${produitId}/barcode`, {
       responseType: 'blob',
     });
-    const url = window.URL.createObjectURL(new Blob([response.data as BlobPart]));
+    const url = window.URL.createObjectURL(
+      new Blob([response.data as BlobPart]),
+    );
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', `barcode-${nom.replace(/\s+/g, '-')}.png`);
@@ -161,6 +183,13 @@ export default function Produits() {
   const [stockAlertFilter, setStockAlertFilter] = useState(stockAlertParam);
   const debouncedSearch = useDebounce(q, 300);
 
+  // ── Stock status filter (from ?stock= query param) ──
+  const stockQueryValue = searchParams.get('stock');
+  const initialStockFilter = stockStatusFromQuery(stockQueryValue);
+  const [stockFilter, setStockFilter] = useState<StockStatus | null>(
+    initialStockFilter,
+  );
+
   const { sort, order, onSort, directionFor } = useSortableTable(
     sortParam ?? 'nom',
     sortParam ? orderParam : 'asc',
@@ -170,6 +199,13 @@ export default function Produits() {
   useEffect(() => {
     setStockAlertFilter(stockAlertParam);
   }, [stockAlertParam]);
+
+  // Sync stock filter from URL query param on mount/navigation
+  useEffect(() => {
+    const urlStatus = stockStatusFromQuery(searchParams.get('stock'));
+    setStockFilter(urlStatus);
+    setPage(0);
+  }, [searchParams.get('stock')]);
 
   // When stockAlert filter is on, override the search with stock<=2 equivalent.
   // The backend sorts by stock asc so low/zero items surface first.
@@ -183,6 +219,7 @@ export default function Produits() {
     categorie: catFilter === 'ALL' ? undefined : catFilter,
     sort: effectiveSort,
     order: effectiveOrder,
+    stock: stockFilter ?? undefined,
   });
 
   const createMut = useCreateProduit();
@@ -193,6 +230,7 @@ export default function Produits() {
   const [editing, setEditing] = useState<Produit | null>(null);
   const [form, setForm] = useState<FormState>(empty);
 
+  // Stock filter is now handled server-side via the ?stock= query param
   const produits = data?.content ?? [];
   const totalPages = data?.totalPages ?? 1;
   const totalElements = data?.totalElements ?? 0;
@@ -229,7 +267,8 @@ export default function Produits() {
       // Build barcode value based on mode
       let barcodeVal: string | undefined | null;
       if (form.barcodeMode === 'auto') barcodeVal = 'AUTO';
-      else if (form.barcodeMode === 'custom') barcodeVal = form.barcode?.trim() || undefined;
+      else if (form.barcodeMode === 'custom')
+        barcodeVal = form.barcode?.trim() || undefined;
       else barcodeVal = null; // 'none' → clear barcode
 
       if (editing) {
@@ -352,7 +391,8 @@ export default function Produits() {
           <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50/70 dark:bg-red-950/20 dark:border-red-900/50 px-4 py-2.5">
             <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
             <span className="text-sm font-medium text-red-700 dark:text-red-400">
-              Filtre actif : produits triés par stock croissant (stock faible en premier)
+              Filtre actif : produits triés par stock croissant (stock faible en
+              premier)
             </span>
             <button
               onClick={() => setStockAlertFilter(false)}
@@ -377,7 +417,6 @@ export default function Produits() {
               className="pl-9"
             />
           </div>
-
           {/* Category filter pills */}
           <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
             {ALL_CATS.map((cat) => (
@@ -398,11 +437,36 @@ export default function Produits() {
             ))}
           </div>
 
+          {/* Stock status filter dropdown */}
+          <Select
+            value={stockFilter ?? 'ALL'}
+            onValueChange={(v) => {
+              setStockFilter(v === 'ALL' ? null : (v as StockStatus));
+              setPage(0);
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filtrer par stock" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Tous les stocks</SelectItem>
+              {STOCK_THRESHOLDS.map((config) => (
+                <SelectItem key={config.status} value={config.status}>
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={`h-2 w-2 rounded-full ${config.color.replace('text-', 'bg-').split(' ')[0]}`}
+                    />
+                    {config.label}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           {/* Total count */}
           <span className="text-sm text-muted-foreground ml-auto">
             {totalElements} produit{totalElements !== 1 ? 's' : ''}
           </span>
-
           {/* Page size */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Afficher</span>
@@ -433,11 +497,21 @@ export default function Produits() {
             <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead field="nom" type="text" direction={directionFor('nom')} onSort={onSort} className="w-[25%] md:w-[22%] lg:w-[20%]">
+                  <SortableTableHead
+                    field="nom"
+                    type="text"
+                    direction={directionFor('nom')}
+                    onSort={onSort}
+                    className="w-[25%] md:w-[22%] lg:w-[20%]"
+                  >
                     Produit
                   </SortableTableHead>
-                  <TableHead className="w-[20%] md:w-[15%] lg:w-[12%]">Catégorie</TableHead>
-                  <TableHead className="hidden md:table-cell md:w-[18%] lg:w-[15%]">SKU</TableHead>
+                  <TableHead className="w-[20%] md:w-[15%] lg:w-[12%]">
+                    Catégorie
+                  </TableHead>
+                  <TableHead className="hidden md:table-cell md:w-[18%] lg:w-[15%]">
+                    SKU
+                  </TableHead>
                   <SortableTableHead
                     field="purchasePrice"
                     type="number"
@@ -456,7 +530,9 @@ export default function Produits() {
                   >
                     P. Vente
                   </SortableTableHead>
-                  <TableHead className="text-right hidden lg:table-cell lg:w-[10%]">Marge</TableHead>
+                  <TableHead className="text-right hidden lg:table-cell lg:w-[10%]">
+                    Marge
+                  </TableHead>
                   <SortableTableHead
                     field="stock"
                     type="number"
@@ -511,14 +587,20 @@ export default function Produits() {
                             {p.sku}
                           </span>
                         ) : (
-                          <span className="text-xs text-muted-foreground/50">—</span>
+                          <span className="text-xs text-muted-foreground/50">
+                            —
+                          </span>
                         )}
                       </TableCell>
                       <TableCell className="text-right hidden lg:table-cell tabular-nums text-sm">
-                        {p.purchasePrice != null ? formatDZD(p.purchasePrice) : '—'}
+                        {p.purchasePrice != null
+                          ? formatDZD(p.purchasePrice)
+                          : '—'}
                       </TableCell>
                       <TableCell className="text-right tabular-nums font-semibold text-sm">
-                        {p.sellingPrice != null ? formatDZD(p.sellingPrice) : '—'}
+                        {p.sellingPrice != null
+                          ? formatDZD(p.sellingPrice)
+                          : '—'}
                       </TableCell>
                       <TableCell className="text-right hidden lg:table-cell">
                         <MarginBadge margin={p.profitMargin} />
@@ -529,8 +611,8 @@ export default function Produits() {
                             p.stock === 0
                               ? 'text-destructive'
                               : p.stock <= 3
-                              ? 'text-warning'
-                              : ''
+                                ? 'text-warning'
+                                : ''
                           }`}
                         >
                           {p.stock}
@@ -579,7 +661,11 @@ export default function Produits() {
               <PaginationItem>
                 <PaginationPrevious
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  className={page === 0 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  className={
+                    page === 0
+                      ? 'pointer-events-none opacity-50'
+                      : 'cursor-pointer'
+                  }
                 />
               </PaginationItem>
               <PaginationItem>
@@ -589,9 +675,13 @@ export default function Produits() {
               </PaginationItem>
               <PaginationItem>
                 <PaginationNext
-                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  onClick={() =>
+                    setPage((p) => Math.min(totalPages - 1, p + 1))
+                  }
                   className={
-                    page === totalPages - 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+                    page === totalPages - 1
+                      ? 'pointer-events-none opacity-50'
+                      : 'cursor-pointer'
                   }
                 />
               </PaginationItem>
@@ -651,7 +741,9 @@ export default function Produits() {
               <Label>Catégorie</Label>
               <Select
                 value={form.categorie}
-                onValueChange={(v) => setForm({ ...form, categorie: v as ProduitCategorie })}
+                onValueChange={(v) =>
+                  setForm({ ...form, categorie: v as ProduitCategorie })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -672,7 +764,15 @@ export default function Produits() {
                 min="0"
                 placeholder="0"
                 value={form.stock ?? ''}
-                onChange={(e) => setForm({ ...form, stock: e.target.value === '' ? undefined : Number(e.target.value) })}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    stock:
+                      e.target.value === ''
+                        ? undefined
+                        : Number(e.target.value),
+                  })
+                }
               />
             </div>
 
@@ -795,7 +895,10 @@ export default function Produits() {
                     <Input
                       value={form.barcode ?? ''}
                       onChange={(e) =>
-                        setForm({ ...form, barcode: e.target.value || undefined })
+                        setForm({
+                          ...form,
+                          barcode: e.target.value || undefined,
+                        })
                       }
                       placeholder="Scanner ou saisir le code-barres"
                     />
@@ -831,7 +934,10 @@ export default function Produits() {
                     onChange={(e) =>
                       setForm({
                         ...form,
-                        purchasePrice: e.target.value === '' ? undefined : Number(e.target.value),
+                        purchasePrice:
+                          e.target.value === ''
+                            ? undefined
+                            : Number(e.target.value),
                       })
                     }
                   />
@@ -848,7 +954,10 @@ export default function Produits() {
                     onChange={(e) =>
                       setForm({
                         ...form,
-                        sellingPrice: e.target.value === '' ? undefined : Number(e.target.value),
+                        sellingPrice:
+                          e.target.value === ''
+                            ? undefined
+                            : Number(e.target.value),
                       })
                     }
                   />
@@ -862,7 +971,15 @@ export default function Produits() {
                     min="0"
                     placeholder="0"
                     value={form.prix ?? ''}
-                    onChange={(e) => setForm({ ...form, prix: e.target.value === '' ? undefined : Number(e.target.value) })}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        prix:
+                          e.target.value === ''
+                            ? undefined
+                            : Number(e.target.value),
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -875,23 +992,38 @@ export default function Produits() {
                   <div className="mt-3 p-3 rounded-lg bg-muted/60 border border-border">
                     <div className="flex items-center gap-4 text-sm">
                       <div>
-                        <span className="text-muted-foreground text-xs">Profit estimé : </span>
+                        <span className="text-muted-foreground text-xs">
+                          Profit estimé :{' '}
+                        </span>
                         <span className="font-semibold">
                           {formatDZD(form.sellingPrice - form.purchasePrice)}
                         </span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground text-xs">Marge : </span>
+                        <span className="text-muted-foreground text-xs">
+                          Marge :{' '}
+                        </span>
                         <span
                           className={`font-semibold ${
-                            ((form.sellingPrice - form.purchasePrice) / form.purchasePrice) * 100 >= 30
+                            ((form.sellingPrice - form.purchasePrice) /
+                              form.purchasePrice) *
+                              100 >=
+                            30
                               ? 'text-green-600'
-                              : ((form.sellingPrice - form.purchasePrice) / form.purchasePrice) * 100 >= 15
-                              ? 'text-amber-600'
-                              : 'text-red-600'
+                              : ((form.sellingPrice - form.purchasePrice) /
+                                    form.purchasePrice) *
+                                    100 >=
+                                  15
+                                ? 'text-amber-600'
+                                : 'text-red-600'
                           }`}
                         >
-                          {(((form.sellingPrice - form.purchasePrice) / form.purchasePrice) * 100).toFixed(1)}%
+                          {(
+                            ((form.sellingPrice - form.purchasePrice) /
+                              form.purchasePrice) *
+                            100
+                          ).toFixed(1)}
+                          %
                         </span>
                       </div>
                     </div>
@@ -904,7 +1036,9 @@ export default function Produits() {
               <Label>Description</Label>
               <Textarea
                 value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
                 placeholder="Description optionnelle du produit…"
                 rows={3}
               />

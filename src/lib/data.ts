@@ -142,6 +142,7 @@ export const usePaginatedProduits = (params: {
   categorie?: string;
   sort?: string;
   order?: 'asc' | 'desc';
+  stock?: string;
 }) =>
   useQuery({
     queryKey: ['produits', params],
