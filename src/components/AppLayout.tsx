@@ -15,6 +15,8 @@ import {
   ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
+  Truck,
+  FileBarChart2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, type AppRole } from '@/lib/auth';
@@ -47,7 +49,9 @@ const nav: NavItem[] = [
   },
   { to: '/clients', label: 'Clients', icon: Users, role: 'ADMIN' },
   { to: '/produits', label: 'Produits', icon: Glasses, role: 'ADMIN' },
+  { to: '/fournisseurs', label: 'Fournisseurs', icon: Truck, role: 'ADMIN' },
   { to: '/ordonnances', label: 'Ordonnances', icon: FileText },
+  { to: '/rapports', label: 'Rapports', icon: FileBarChart2, role: 'ADMIN' },
   { to: '/profil', label: 'Profil', icon: UserCircle },
   {
     to: '/admin/utilisateurs',
@@ -152,7 +156,7 @@ export default function AppLayout() {
             <PanelLeftClose className="h-4 w-4 text-sidebar-foreground/40 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-0 -translate-x-2" />
           )}
         </div>
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
+        <nav className="sidebar-nav-scroll flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
           {visibleNav.map((n) => (
             <NavLink
               key={n.to}

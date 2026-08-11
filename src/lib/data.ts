@@ -6,6 +6,8 @@ import type {
   CommandeStatut,
   DashboardStatistics,
   FinancialKpis,
+  Fournisseur,
+  FournisseurDetail,
   InventoryValueResult,
   LigneCommande,
   MonthlyCaItem,
@@ -13,6 +15,7 @@ import type {
   ProductProfitabilityItem,
   Produit,
   PaginatedResponse,
+  SalesExportItem,
   Store,
 } from './types';
 
@@ -558,3 +561,108 @@ export const useUpdateStoreLogo = () => {
   });
 };
 
+// ==================== FOURNISSEURS ====================
+
+const FOURNISSEURS_KEY = ['fournisseurs'] as const;
+
+export const usePaginatedFournisseurs = (params: {
+  page: number;
+  size: number;
+  q?: string;
+  sort?: string;
+  order?: 'asc' | 'desc';
+}) =>
+  useQuery({
+    queryKey: ['fournisseurs', params],
+    queryFn: async () => fetchPaginated<Fournisseur>('/suppliers', params),
+  });
+
+export const useFournisseur = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['fournisseur', id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data } = await apiClient.get<FournisseurDetail>(`/suppliers/${id}`);
+      return data;
+    },
+  });
+
+export const useCreateFournisseur = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (dto: Omit<Fournisseur, 'id' | 'createdAt' | 'produitCount'>) => {
+      const { data } = await apiClient.post<Fournisseur>('/suppliers', dto);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: FOURNISSEURS_KEY }),
+  });
+};
+
+export const useUpdateFournisseur = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Fournisseur> }) => {
+      const { data } = await apiClient.patch<Fournisseur>(`/suppliers/${id}`, patch);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: FOURNISSEURS_KEY }),
+  });
+};
+
+export const useDeleteFournisseur = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/suppliers/${id}`);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: FOURNISSEURS_KEY }),
+  });
+};
+
+export const useLinkProduitFournisseur = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ fournisseurId, produitId }: { fournisseurId: string; produitId: string }) => {
+      const { data } = await apiClient.post(`/suppliers/${fournisseurId}/produits`, { produitId });
+      return data;
+    },
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: FOURNISSEURS_KEY });
+      qc.invalidateQueries({ queryKey: ['fournisseur', v.fournisseurId] });
+    },
+  });
+};
+
+export const useUnlinkProduitFournisseur = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ fournisseurId, produitId }: { fournisseurId: string; produitId: string }) => {
+      await apiClient.delete(`/suppliers/${fournisseurId}/produits/${produitId}`);
+    },
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: FOURNISSEURS_KEY });
+      qc.invalidateQueries({ queryKey: ['fournisseur', v.fournisseurId] });
+    },
+  });
+};
+
+// ==================== SALES EXPORT ====================
+
+export interface SalesExportParams {
+  dateFrom?: string;
+  dateTo?: string;
+  categorie?: string;
+  statut?: string;
+}
+
+export const useSalesExport = (params: SalesExportParams, enabled = true) =>
+  useQuery({
+    queryKey: ['salesExport', params],
+    enabled,
+    queryFn: async () => {
+      const { data } = await apiClient.get<SalesExportItem[]>('/statistics/sales-export', {
+        params,
+      });
+      return data;
+    },
+  });

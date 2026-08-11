@@ -21,6 +21,8 @@ import ResetPassword from './pages/ResetPassword';
 import ConfirmEmail from './pages/ConfirmEmail';
 import Profil from './pages/Profil';
 import AdminUsers from './pages/AdminUsers';
+import Fournisseurs from './pages/Fournisseurs';
+import Rapports from './pages/Rapports';
 import NotFound from './pages/NotFound';
 
 const queryClient = new QueryClient();
@@ -69,7 +71,23 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/fournisseurs"
+                element={
+                  <ProtectedRoute requireRole="ADMIN">
+                    <Fournisseurs />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/ordonnances" element={<Ordonnances />} />
+              <Route
+                path="/rapports"
+                element={
+                  <ProtectedRoute requireRole="ADMIN">
+                    <Rapports />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/commandes"
                 element={

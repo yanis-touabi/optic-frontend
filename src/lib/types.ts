@@ -202,3 +202,48 @@ export interface ProfitChartItem {
   profit: number;
 }
 
+// ── Fournisseurs ──────────────────────────────────────────────────────────────
+
+export interface Fournisseur {
+  id: string;
+  nom: string;
+  contactPerson: string;
+  email: string;
+  telephone: string;
+  adresse: string;
+  notes: string;
+  produitCount?: number;
+  createdAt: string;
+}
+
+export interface FournisseurDetail extends Fournisseur {
+  produits: Array<{
+    id: string;
+    nom: string;
+    marque: string;
+    modele: string;
+    categorie: ProduitCategorie;
+    sku?: string;
+    prix: number;
+    stock: number;
+    linkId: string;
+  }>;
+}
+
+// ── Sales Export ──────────────────────────────────────────────────────────────
+
+export interface SalesExportItem {
+  numeroBon: number;
+  date: string;
+  clientNom: string;
+  clientPrenom: string;
+  clientTelephone: string;
+  designation: string;
+  categorie: ProduitCategorie | '';
+  sku: string;
+  quantite: number;
+  prixUnitaire: number;
+  totalLigne: number;
+  statut: CommandeStatut;
+  dateLivraisonPrevue: string;
+}
