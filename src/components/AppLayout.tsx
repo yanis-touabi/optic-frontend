@@ -88,7 +88,9 @@ export default function AppLayout() {
 
   const getLogoUrl = () => {
     if (!store?.logoUrl) return null;
-    const base = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '');
+    const base = (
+      import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+    ).replace('/api', '');
     return `${base}/${store.logoUrl}`;
   };
 
@@ -110,29 +112,37 @@ export default function AppLayout() {
           )}
           title={isCollapsed ? 'Agrandir' : 'Réduire'}
         >
-          <div className="h-10 w-10 shrink-0 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground grid place-items-center overflow-hidden transition-all duration-300 group-hover:scale-105 group-active:scale-95">
+          <div className="h-10 w-10 shrink-0 rounded-lg bg-white text-sidebar-primary-foreground grid place-items-center overflow-hidden transition-all duration-300 group-hover:scale-105 group-active:scale-95">
             {isCollapsed ? (
               <div className="relative h-full w-full flex items-center justify-center">
                 <div className="group-hover:opacity-0 transition-opacity duration-300 flex items-center justify-center w-full h-full">
                   {getLogoUrl() ? (
-                    <img src={getLogoUrl()!} alt="Logo" className="w-full h-full object-cover" />
+                    <img
+                      src={getLogoUrl()!}
+                      alt="Logo"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <Eye className="h-5 w-5" />
                   )}
                 </div>
                 <PanelLeftOpen className="absolute inset-0 m-auto h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
+            ) : getLogoUrl() ? (
+              <img
+                src={getLogoUrl()!}
+                alt="Logo"
+                className="w-full h-full object-cover"
+              />
             ) : (
-              getLogoUrl() ? (
-                <img src={getLogoUrl()!} alt="Logo" className="w-full h-full object-cover" />
-              ) : (
-                <Eye className="h-5 w-5" />
-              )
+              <Eye className="h-5 w-5" />
             )}
           </div>
           {!isCollapsed && (
             <div className="flex-1 overflow-hidden whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-300">
-              <div className="font-semibold tracking-tight">{store?.name || 'OptiShop'}</div>
+              <div className="font-semibold tracking-tight">
+                {store?.name || 'Nedhra'}
+              </div>
               <div className="text-xs text-sidebar-foreground/60">
                 Gestion opticien
               </div>
@@ -207,7 +217,6 @@ export default function AppLayout() {
             <LogOut className="h-4 w-4 shrink-0" />
             {!isCollapsed && <span className="ml-3">Déconnexion</span>}
           </Button>
-
         </div>
       </aside>
       <main className="flex-1 min-w-0 overflow-y-auto">

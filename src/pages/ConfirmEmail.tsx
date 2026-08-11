@@ -20,7 +20,7 @@ export default function ConfirmEmail() {
             <Eye className="h-6 w-6" />
           </div>
           <div>
-            <div className="text-xl font-semibold">OptiShop</div>
+            <div className="text-xl font-semibold">Nedhra</div>
             <div className="text-xs text-muted-foreground">Confirmation</div>
           </div>
         </div>

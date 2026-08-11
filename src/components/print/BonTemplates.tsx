@@ -21,14 +21,20 @@ interface Props {
 const Header = ({ store }: { store?: any }) => {
   const getLogoUrl = () => {
     if (!store?.logoUrl) return null;
-    const base = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '');
+    const base = (
+      import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+    ).replace('/api', '');
     return `${base}/${store.logoUrl}`;
   };
 
   return (
     <div className="flex items-start gap-4">
       {getLogoUrl() && (
-        <img src={getLogoUrl()!} alt="Logo" className="h-12 w-12 object-contain" />
+        <img
+          src={getLogoUrl()!}
+          alt="Logo"
+          className="h-12 w-12 object-contain"
+        />
       )}
       <div>
         <div className="text-2xl font-bold tracking-tight uppercase">
@@ -36,8 +42,18 @@ const Header = ({ store }: { store?: any }) => {
         </div>
         <div className="text-[10px] text-gray-700 leading-tight mt-1 whitespace-pre-line">
           Magasin d'Optique
-          {store?.address && <><br />{store.address}</>}
-          {store?.telephone && <><br />Tél: {store.telephone}</>}
+          {store?.address && (
+            <>
+              <br />
+              {store.address}
+            </>
+          )}
+          {store?.telephone && (
+            <>
+              <br />
+              Tél: {store.telephone}
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -271,7 +287,7 @@ export function BonClassique({ cmd, client, ord, store }: Props) {
         </div>
       </div>
       <div className="text-center text-[10px] text-gray-500 mt-8 border-t pt-2">
-        Merci de votre confiance · {store?.name || 'OptiShop'}
+        Merci de votre confiance · {store?.name || 'Nedhra'}
       </div>
     </div>
   );
@@ -281,7 +297,9 @@ export function BonCompact({ cmd, client, store }: Props) {
   return (
     <div className="font-sans text-[12px] text-black">
       <div className="flex justify-between items-center mb-3 border-b border-black pb-2">
-        <div className="font-bold text-lg">{store?.name?.toUpperCase() || 'OPTISHOP'}</div>
+        <div className="font-bold text-lg">
+          {store?.name?.toUpperCase() || 'OPTISHOP'}
+        </div>
         <div className="text-right">
           <div className="font-semibold">N° {cmd.numero}</div>
           <div className="text-[10px]">{formatDateTime(cmd.createdAt)}</div>
@@ -295,7 +313,7 @@ export function BonCompact({ cmd, client, store }: Props) {
       <ItemsTable cmd={cmd} padRows={1} />
       {cmd.notes && <div className="text-[10px]">{cmd.notes}</div>}
       <div className="text-center text-[10px] text-gray-500 mt-6">
-        Merci · {store?.name || 'OptiShop'}
+        Merci · {store?.name || 'Nedhra'}
       </div>
     </div>
   );
@@ -312,7 +330,9 @@ export function BonModerne({ cmd, client, ord, store }: Props) {
         }}
       >
         <div>
-          <div className="text-3xl font-bold tracking-wide">{store?.name?.toUpperCase() || 'OPTISHOP'}</div>
+          <div className="text-3xl font-bold tracking-wide">
+            {store?.name?.toUpperCase() || 'OPTISHOP'}
+          </div>
           <div className="text-xs opacity-90 mt-1">
             Magasin d'Optique · {store?.address || 'Alger'}
           </div>
@@ -355,7 +375,7 @@ export function BonModerne({ cmd, client, ord, store }: Props) {
         <div className="text-[11px] mb-4 italic text-gray-700">{cmd.notes}</div>
       )}
       <div className="text-center text-[10px] text-gray-500 mt-6 pt-3 border-t">
-        Merci de votre confiance · {store?.name || 'OptiShop'}
+        Merci de votre confiance · {store?.name || 'Nedhra'}
       </div>
     </div>
   );
