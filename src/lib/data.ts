@@ -17,6 +17,7 @@ import type {
   PaginatedResponse,
   SalesExportItem,
   Store,
+  SupplierProduct,
 } from './types';
 
 const fetchPaginated = async <T>(
@@ -583,6 +584,42 @@ export const useFournisseur = (id: string | undefined) =>
     enabled: !!id,
     queryFn: async () => {
       const { data } = await apiClient.get<FournisseurDetail>(`/suppliers/${id}`);
+      return data;
+    },
+  });
+
+export const useSupplierProducts = (
+  supplierId: string | undefined,
+  params: {
+    page: number;
+    size?: number;
+    limit?: number;
+    search?: string;
+    q?: string;
+    type?: string;
+    sort?: string;
+    order?: 'asc' | 'desc';
+  },
+) =>
+  useQuery({
+    queryKey: ['supplier-products', supplierId, params],
+    enabled: !!supplierId,
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaginatedResponse<SupplierProduct>>(
+        `/suppliers/${supplierId}/produits`,
+        {
+          params: {
+            page: params.page,
+            ...(params.size !== undefined ? { size: params.size } : {}),
+            ...(params.limit !== undefined ? { limit: params.limit } : {}),
+            ...(params.search !== undefined ? { search: params.search } : {}),
+            ...(params.q !== undefined ? { q: params.q } : {}),
+            ...(params.type ? { type: params.type } : {}),
+            ...(params.sort ? { sort: params.sort } : {}),
+            ...(params.order ? { order: params.order } : {}),
+          },
+        },
+      );
       return data;
     },
   });

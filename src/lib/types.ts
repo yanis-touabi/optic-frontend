@@ -216,18 +216,21 @@ export interface Fournisseur {
   createdAt: string;
 }
 
+export interface SupplierProduct {
+  id: string;
+  nom: string;
+  marque: string;
+  modele: string;
+  categorie: ProduitCategorie;
+  sku?: string;
+  prix: number;
+  stock: number;
+  createdAt: string;
+  linkId: string;
+}
+
 export interface FournisseurDetail extends Fournisseur {
-  produits: Array<{
-    id: string;
-    nom: string;
-    marque: string;
-    modele: string;
-    categorie: ProduitCategorie;
-    sku?: string;
-    prix: number;
-    stock: number;
-    linkId: string;
-  }>;
+  produits: SupplierProduct[];
 }
 
 // ── Sales Export ──────────────────────────────────────────────────────────────
