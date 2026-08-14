@@ -114,6 +114,7 @@ export default function Fournisseurs() {
   >('ALL');
   const [productPage, setProductPage] = useState(0);
   const [productPageSize, setProductPageSize] = useState(10);
+  const [productSuggestionsOpen, setProductSuggestionsOpen] = useState(false);
 
   // Dialog state
   const [createOpen, setCreateOpen] = useState(false);
@@ -240,28 +241,43 @@ export default function Fournisseurs() {
                 setProductSearch(e.target.value);
                 setProductPage(0);
               }}
+              onFocus={() => setProductSuggestionsOpen(true)}
               className="pl-9"
             />
-            {productSearch.trim() && productSuggestions.data?.content.length ? (
+            {productSearch.trim() &&
+            productSuggestions.data?.content.length &&
+            productSuggestionsOpen ? (
               <div className="absolute z-20 mt-2 w-full rounded-md border bg-popover p-2 shadow-lg">
                 <div className="flex flex-col gap-1">
                   {productSuggestions.data.content.slice(0, 5).map((item) => (
                     <button
                       key={item.id}
                       type="button"
-                      className="flex items-center justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-muted"
+                      className="flex flex-col items-start justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-muted"
                       onClick={() => {
                         setProductSearch(item.nom);
                         setProductPage(0);
+                        setProductSuggestionsOpen(false);
                       }}
                     >
-                      <span className="font-medium">{item.nom}</span>
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] px-1.5 py-0.5"
-                      >
-                        {item.categorie}
-                      </Badge>
+                      <div className="w-full flex items-center gap-2">
+                        <span className="font-medium truncate">{item.nom}</span>
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] px-1.5 py-0.5 ml-auto"
+                        >
+                          {item.categorie}
+                        </Badge>
+                      </div>
+                      <div className="w-full text-xs text-muted-foreground mt-1 truncate">
+                        {[
+                          item.marque || undefined,
+                          item.modele || undefined,
+                          item.sku || undefined,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -564,8 +580,16 @@ function ProductSupplierGroup({
               {item.categorie}
             </Badge>
           </div>
-          {item.marque && (
-            <p className="text-sm text-muted-foreground">{item.marque}</p>
+          {(item.marque || item.modele || item.sku) && (
+            <p className="text-sm text-muted-foreground">
+              {[
+                item.marque || undefined,
+                item.modele || undefined,
+                item.sku || undefined,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
           )}
         </div>
       </div>

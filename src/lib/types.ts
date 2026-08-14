@@ -238,6 +238,7 @@ export interface SearchSupplierByProductItem {
   nom: string;
   marque: string;
   modele: string;
+  sku: string;
   categorie: ProduitCategorie;
   suppliers: Array<{
     id: string;
