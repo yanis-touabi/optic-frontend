@@ -245,20 +245,13 @@ export default function Fournisseurs() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
-                  const suggestions = productSuggestions.data?.content ?? [];
-                  const exact = (productSuggestions.data as any)?.exactSkuMatch;
-                  if (suggestions.length) {
-                    const first = suggestions[0];
-                    setProductSearch(
-                      exact && first.sku ? first.sku : first.nom,
-                    );
-                    setProductPage(0);
-                    setProductSuggestionsOpen(false);
-                    // remove focus so dropdown won't re-open immediately
-                    (e.target as HTMLInputElement).blur();
-                  } else {
-                    setProductSuggestionsOpen(false);
-                  }
+                  // Do not auto-select the first suggestion on Enter.
+                  // If the user typed a query and presses Enter without
+                  // explicitly selecting a suggestion, commit the typed
+                  // input as-is and close the suggestions.
+                  setProductPage(0);
+                  setProductSuggestionsOpen(false);
+                  (e.target as HTMLInputElement).blur();
                 }
               }}
               className="pl-9"
