@@ -233,6 +233,30 @@ export interface FournisseurDetail extends Fournisseur {
   produits: SupplierProduct[];
 }
 
+export interface SearchSupplierByProductItem {
+  id: string;
+  nom: string;
+  marque: string;
+  modele: string;
+  categorie: ProduitCategorie;
+  suppliers: Array<{
+    id: string;
+    nom: string;
+    contactPerson: string;
+    telephone: string;
+    email: string;
+  }>;
+}
+
+export interface ProductSupplierSearchResult {
+  content: SearchSupplierByProductItem[];
+  page: number;
+  limit: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
+
 // ── Sales Export ──────────────────────────────────────────────────────────────
 
 export interface SalesExportItem {

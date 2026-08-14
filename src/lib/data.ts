@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useInfiniteQuery,
+} from '@tanstack/react-query';
 import { apiClient } from '../api/apiClient';
 import type {
   Client,
@@ -38,9 +43,8 @@ export const useClients = () =>
   useQuery({
     queryKey: CLIENTS_KEY,
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<Client>>(
-        '/clients',
-      );
+      const { data } =
+        await apiClient.get<PaginatedResponse<Client>>('/clients');
       return data.content;
     },
   });
@@ -132,9 +136,8 @@ export const useProduits = () =>
   useQuery({
     queryKey: PRODUITS_KEY,
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<Produit>>(
-        '/products',
-      );
+      const { data } =
+        await apiClient.get<PaginatedResponse<Produit>>('/products');
       return data.content;
     },
   });
@@ -151,6 +154,30 @@ export const usePaginatedProduits = (params: {
   useQuery({
     queryKey: ['produits', params],
     queryFn: async () => fetchPaginated<Produit>('/products', params),
+  });
+
+export const useProductSuppliersSearch = (params: {
+  query?: string;
+  q?: string;
+  type?: string;
+  page: number;
+  limit?: number;
+}) =>
+  useQuery({
+    queryKey: ['product-suppliers-search', params],
+    enabled: !!(params.query ?? params.q ?? '').trim(),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/products/search-suppliers', {
+        params: {
+          ...(params.query !== undefined ? { query: params.query } : {}),
+          ...(params.q !== undefined ? { q: params.q } : {}),
+          ...(params.type ? { type: params.type } : {}),
+          page: params.page,
+          ...(params.limit !== undefined ? { limit: params.limit } : {}),
+        },
+      });
+      return data;
+    },
   });
 
 export const useCreateProduit = () => {
@@ -303,9 +330,8 @@ export const useCommandes = () =>
   useQuery({
     queryKey: COMMANDES_KEY,
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<Commande>>(
-        '/orders',
-      );
+      const { data } =
+        await apiClient.get<PaginatedResponse<Commande>>('/orders');
       return data.content;
     },
   });
@@ -463,10 +489,12 @@ export const useDashboard = (period: string = '30d') =>
   useQuery({
     queryKey: ['dashboard', period],
     queryFn: async () => {
-      const { data } =
-        await apiClient.get<DashboardStatistics>('/statistics/dashboard', {
+      const { data } = await apiClient.get<DashboardStatistics>(
+        '/statistics/dashboard',
+        {
           params: { period },
-        });
+        },
+      );
       return data;
     },
   });
@@ -492,9 +520,12 @@ export const useFinancials = (period: string = '30d') =>
   useQuery({
     queryKey: ['financials', period],
     queryFn: async () => {
-      const { data } = await apiClient.get<FinancialKpis>('/statistics/financials', {
-        params: { period },
-      });
+      const { data } = await apiClient.get<FinancialKpis>(
+        '/statistics/financials',
+        {
+          params: { period },
+        },
+      );
       return data;
     },
   });
@@ -583,7 +614,9 @@ export const useFournisseur = (id: string | undefined) =>
     queryKey: ['fournisseur', id],
     enabled: !!id,
     queryFn: async () => {
-      const { data } = await apiClient.get<FournisseurDetail>(`/suppliers/${id}`);
+      const { data } = await apiClient.get<FournisseurDetail>(
+        `/suppliers/${id}`,
+      );
       return data;
     },
   });
@@ -627,7 +660,9 @@ export const useSupplierProducts = (
 export const useCreateFournisseur = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (dto: Omit<Fournisseur, 'id' | 'createdAt' | 'produitCount'>) => {
+    mutationFn: async (
+      dto: Omit<Fournisseur, 'id' | 'createdAt' | 'produitCount'>,
+    ) => {
       const { data } = await apiClient.post<Fournisseur>('/suppliers', dto);
       return data;
     },
@@ -638,8 +673,17 @@ export const useCreateFournisseur = () => {
 export const useUpdateFournisseur = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Fournisseur> }) => {
-      const { data } = await apiClient.patch<Fournisseur>(`/suppliers/${id}`, patch);
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Partial<Fournisseur>;
+    }) => {
+      const { data } = await apiClient.patch<Fournisseur>(
+        `/suppliers/${id}`,
+        patch,
+      );
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: FOURNISSEURS_KEY }),
@@ -659,8 +703,17 @@ export const useDeleteFournisseur = () => {
 export const useLinkProduitFournisseur = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ fournisseurId, produitId }: { fournisseurId: string; produitId: string }) => {
-      const { data } = await apiClient.post(`/suppliers/${fournisseurId}/produits`, { produitId });
+    mutationFn: async ({
+      fournisseurId,
+      produitId,
+    }: {
+      fournisseurId: string;
+      produitId: string;
+    }) => {
+      const { data } = await apiClient.post(
+        `/suppliers/${fournisseurId}/produits`,
+        { produitId },
+      );
       return data;
     },
     onSuccess: (_d, v) => {
@@ -673,8 +726,16 @@ export const useLinkProduitFournisseur = () => {
 export const useUnlinkProduitFournisseur = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ fournisseurId, produitId }: { fournisseurId: string; produitId: string }) => {
-      await apiClient.delete(`/suppliers/${fournisseurId}/produits/${produitId}`);
+    mutationFn: async ({
+      fournisseurId,
+      produitId,
+    }: {
+      fournisseurId: string;
+      produitId: string;
+    }) => {
+      await apiClient.delete(
+        `/suppliers/${fournisseurId}/produits/${produitId}`,
+      );
     },
     onSuccess: (_d, v) => {
       qc.invalidateQueries({ queryKey: FOURNISSEURS_KEY });
@@ -697,9 +758,12 @@ export const useSalesExport = (params: SalesExportParams, enabled = true) =>
     queryKey: ['salesExport', params],
     enabled,
     queryFn: async () => {
-      const { data } = await apiClient.get<SalesExportItem[]>('/statistics/sales-export', {
-        params,
-      });
+      const { data } = await apiClient.get<SalesExportItem[]>(
+        '/statistics/sales-export',
+        {
+          params,
+        },
+      );
       return data;
     },
   });
