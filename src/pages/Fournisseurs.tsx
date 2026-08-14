@@ -242,12 +242,41 @@ export default function Fournisseurs() {
                 setProductPage(0);
               }}
               onFocus={() => setProductSuggestionsOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const suggestions = productSuggestions.data?.content ?? [];
+                  const exact = (productSuggestions.data as any)?.exactSkuMatch;
+                  if (suggestions.length) {
+                    const first = suggestions[0];
+                    setProductSearch(
+                      exact && first.sku ? first.sku : first.nom,
+                    );
+                    setProductPage(0);
+                    setProductSuggestionsOpen(false);
+                    // remove focus so dropdown won't re-open immediately
+                    (e.target as HTMLInputElement).blur();
+                  } else {
+                    setProductSuggestionsOpen(false);
+                  }
+                }
+              }}
               className="pl-9"
             />
+            {(productSuggestions.data as any)?.exactSkuMatch ? (
+              <div className="absolute right-0 top-full mt-2 mr-1 text-xs text-muted-foreground">
+                Correspondance SKU exacte
+              </div>
+            ) : null}
             {productSearch.trim() &&
             productSuggestions.data?.content.length &&
             productSuggestionsOpen ? (
               <div className="absolute z-20 mt-2 w-full rounded-md border bg-popover p-2 shadow-lg">
+                {(productSuggestions.data as any)?.exactSkuMatch ? (
+                  <div className="px-2 pb-1 text-xs text-muted-foreground">
+                    Résultat exact trouvé par SKU
+                  </div>
+                ) : null}
                 <div className="flex flex-col gap-1">
                   {productSuggestions.data.content.slice(0, 5).map((item) => (
                     <button
@@ -255,7 +284,11 @@ export default function Fournisseurs() {
                       type="button"
                       className="flex flex-col items-start justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-muted"
                       onClick={() => {
-                        setProductSearch(item.nom);
+                        const exact = (productSuggestions.data as any)
+                          ?.exactSkuMatch;
+                        setProductSearch(
+                          exact && item.sku ? item.sku : item.nom,
+                        );
                         setProductPage(0);
                         setProductSuggestionsOpen(false);
                       }}
