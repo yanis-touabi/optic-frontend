@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -51,6 +51,9 @@ import type { LigneCommande } from '@/lib/types';
 import { checkStock } from '@/lib/stock-validation';
 import { StockAlert } from '@/components/StockAlert';
 import { toast } from 'sonner';
+import ScannerButton from '@/components/ScannerButton';
+import ScannerDialog from '@/components/ScannerDialog';
+import { useScanner } from '@/contexts/ScannerProvider';
 
 type LocalLigne = LigneCommande;
 
@@ -75,6 +78,14 @@ export default function NouveauBon() {
   const [pickProduit, setPickProduit] = useState<string>('');
 
   const [produitOpen, setProduitOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const scanner = useScanner();
+
+  useEffect(() => {
+    if (scanner.phoneConnected && scannerOpen) {
+      setScannerOpen(false);
+    }
+  }, [scanner.phoneConnected, scannerOpen]);
 
   // Default to first client if not chosen yet - not needed for infinite scroll select
   const effectiveClientId = clientId || '';
@@ -130,6 +141,41 @@ export default function NouveauBon() {
 
     setPickProduit('');
   };
+
+  // react to remote scanner product found
+  useEffect(() => {
+    if (!scanner.lastScannedProduct) return;
+    if (scanner.scanMode !== 'ORDER') return;
+    const p = scanner.lastScannedProduct as any;
+    if (!p?.id) return;
+    // add product to order using same logic as manual add
+    setLignes((currentLignes) => {
+      const existingIndex = currentLignes.findIndex(
+        (ligne) => ligne.produitId === p.id,
+      );
+
+      if (existingIndex !== -1) {
+        const newLignes = [...currentLignes];
+        newLignes[existingIndex] = {
+          ...newLignes[existingIndex],
+          quantite: newLignes[existingIndex].quantite + 1,
+        };
+        toast.success('Quantité mise à jour (scan)');
+        return newLignes;
+      }
+
+      return [
+        ...currentLignes,
+        {
+          id: crypto.randomUUID(),
+          produitId: p.id,
+          designation: `${p.nom}${p.marque ? ` — ${p.marque}` : ''}`,
+          quantite: 1,
+          prixUnitaire: p.prix,
+        },
+      ];
+    });
+  }, [scanner.lastScannedProduct, scanner.scanMode]);
 
   const updateLigne = (id: string, patch: Partial<LocalLigne>) =>
     setLignes((l) => l.map((x) => (x.id === id ? { ...x, ...patch } : x)));
@@ -273,7 +319,8 @@ export default function NouveauBon() {
                               <div className="flex flex-col">
                                 <span>{p.nom}</span>
                                 <span className="text-[10px] text-muted-foreground">
-                                  {formatDZD(p.prix)} — Stock : {p.stock}{p.sku ? ` — SKU : ${p.sku}` : ''}
+                                  {formatDZD(p.prix)} — Stock : {p.stock}
+                                  {p.sku ? ` — SKU : ${p.sku}` : ''}
                                 </span>
                               </div>
                             </CommandItem>
@@ -287,7 +334,31 @@ export default function NouveauBon() {
                   <Plus className="h-4 w-4" />
                   Ajouter
                 </Button>
+                <ScannerButton
+                  onOpen={async () => {
+                    scanner.setScanMode('ORDER');
+                    try {
+                      await scanner.startScanSession();
+                      setScannerOpen(true);
+                    } catch (error) {
+                      toast.error(
+                        'Unable to start the phone scanner. Check the backend connection.',
+                      );
+                    }
+                  }}
+                />
               </div>
+
+              <ScannerDialog
+                open={scannerOpen}
+                onClose={() => {
+                  setScannerOpen(false);
+                  if (!scanner.phoneConnected) {
+                    scanner.setScanMode('NONE');
+                    scanner.stopScanSession().catch(() => {});
+                  }
+                }}
+              />
 
               <StockAlert issues={stockIssues} />
               <Table className="table-fixed w-full">

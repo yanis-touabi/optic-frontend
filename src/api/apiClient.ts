@@ -1,7 +1,28 @@
 import axios from 'axios';
 
+export const resolveLanIp = () =>
+  import.meta.env.VITE_LAN_IP || '192.168.100.17';
+
+export const resolveApiBaseUrl = () => {
+  const configured =
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_PUBLIC_API_URL ||
+    `http://${resolveLanIp()}:3002/api`;
+
+  return configured.replace(/\/+$/, '');
+};
+
+export const resolveFrontendBaseUrl = () => {
+  const configured =
+    import.meta.env.VITE_FRONTEND_URL ||
+    import.meta.env.VITE_APP_URL ||
+    `http://${resolveLanIp()}:8080`;
+
+  return configured.replace(/\/+$/, '');
+};
+
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  baseURL: resolveApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },

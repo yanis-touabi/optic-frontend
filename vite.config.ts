@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: './app.env' });
+import fs from 'fs';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import path from 'path';
@@ -10,7 +11,15 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: '::',
     port: 8080,
-    allowedHosts: ['optic-best-vision.com'],
+    https: {
+      key: fs.readFileSync(
+        path.resolve(__dirname, './certs/optic-order-dev.key'),
+      ),
+      cert: fs.readFileSync(
+        path.resolve(__dirname, './certs/optic-order-dev.pem'),
+      ),
+    },
+    allowedHosts: ['optic-best-vision.com', '192.168.100.5', 'localhost'],
     hmr: {
       overlay: false,
     },

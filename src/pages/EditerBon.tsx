@@ -30,17 +30,16 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import {
-  useCommande,
-  useProduits,
-  useUpdateCommande,
-} from '@/lib/data';
+import { useCommande, useProduits, useUpdateCommande } from '@/lib/data';
 import { ClientSelect } from '@/components/ClientSelect';
 import { OrdonnanceSelect } from '@/components/OrdonnanceSelect';
 import type { LigneCommande, Produit } from '@/lib/types';
 import { checkStock } from '@/lib/stock-validation';
 import { StockAlert } from '@/components/StockAlert';
 import { toast } from 'sonner';
+import ScannerButton from '@/components/ScannerButton';
+import ScannerDialog from '@/components/ScannerDialog';
+import { useScanner } from '@/contexts/ScannerProvider';
 
 export default function EditerBon() {
   const { id } = useParams();
@@ -56,6 +55,14 @@ export default function EditerBon() {
   const [dateLivraison, setDateLivraison] = useState('');
   const [pickProduit, setPickProduit] = useState('');
   const [produitOpen, setProduitOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const scanner = useScanner();
+
+  useEffect(() => {
+    if (scanner.phoneConnected && scannerOpen) {
+      setScannerOpen(false);
+    }
+  }, [scanner.phoneConnected, scannerOpen]);
 
   useEffect(() => {
     if (!cmd) return;
@@ -139,6 +146,41 @@ export default function EditerBon() {
 
     setPickProduit('');
   };
+
+  // react to remote scanner product found
+  useEffect(() => {
+    if (!scanner.lastScannedProduct) return;
+    if (scanner.scanMode !== 'ORDER') return;
+    const p = scanner.lastScannedProduct as any;
+    if (!p?.id) return;
+    // add product to order using same logic as manual add
+    setLignes((currentLignes) => {
+      const existingIndex = currentLignes.findIndex(
+        (ligne) => ligne.produitId === p.id,
+      );
+
+      if (existingIndex !== -1) {
+        const newLignes = [...currentLignes];
+        newLignes[existingIndex] = {
+          ...newLignes[existingIndex],
+          quantite: newLignes[existingIndex].quantite + 1,
+        };
+        toast.success('Quantité mise à jour (scan)');
+        return newLignes;
+      }
+
+      return [
+        ...currentLignes,
+        {
+          id: crypto.randomUUID(),
+          produitId: p.id,
+          designation: `${p.nom}${p.marque ? ` — ${p.marque}` : ''}`,
+          quantite: 1,
+          prixUnitaire: p.prix,
+        },
+      ];
+    });
+  }, [scanner.lastScannedProduct, scanner.scanMode]);
   const updateLigne = (lid: string, patch: Partial<LigneCommande>) =>
     setLignes((l) => l.map((x) => (x.id === lid ? { ...x, ...patch } : x)));
   const removeLigne = (lid: string) =>
@@ -231,10 +273,10 @@ export default function EditerBon() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label>Ordonnance</Label>
-                <OrdonnanceSelect 
-                  clientId={clientId} 
-                  value={ordonnanceId} 
-                  onChange={setOrdonnanceId} 
+                <OrdonnanceSelect
+                  clientId={clientId}
+                  value={ordonnanceId}
+                  onChange={setOrdonnanceId}
                 />
               </div>
               <div>
@@ -270,7 +312,8 @@ export default function EditerBon() {
                       disabled={isLocked}
                     >
                       {pickProduit
-                        ? effectiveProduits.find((p) => p.id === pickProduit)?.nom
+                        ? effectiveProduits.find((p) => p.id === pickProduit)
+                            ?.nom
                         : 'Choisir un produit...'}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -301,7 +344,8 @@ export default function EditerBon() {
                               <div className="flex flex-col">
                                 <span>{p.nom}</span>
                                 <span className="text-[10px] text-muted-foreground">
-                                  {formatDZD(p.prix)} — Stock : {p.stock}{p.sku ? ` — SKU : ${p.sku}` : ''}
+                                  {formatDZD(p.prix)} — Stock : {p.stock}
+                                  {p.sku ? ` — SKU : ${p.sku}` : ''}
                                 </span>
                               </div>
                             </CommandItem>
@@ -315,7 +359,31 @@ export default function EditerBon() {
                   <Plus className="h-4 w-4" />
                   Ajouter
                 </Button>
+                <ScannerButton
+                  onOpen={async () => {
+                    scanner.setScanMode('ORDER');
+                    try {
+                      await scanner.startScanSession();
+                      setScannerOpen(true);
+                    } catch (error) {
+                      toast.error(
+                        'Unable to start the phone scanner. Check the backend connection.',
+                      );
+                    }
+                  }}
+                />
               </div>
+
+              <ScannerDialog
+                open={scannerOpen}
+                onClose={() => {
+                  setScannerOpen(false);
+                  if (!scanner.phoneConnected) {
+                    scanner.setScanMode('NONE');
+                    scanner.stopScanSession().catch(() => {});
+                  }
+                }}
+              />
 
               <StockAlert issues={stockIssues} />
 
@@ -358,7 +426,10 @@ export default function EditerBon() {
                             value={l.quantite || ''}
                             onChange={(e) =>
                               updateLigne(l.id, {
-                                quantite: e.target.value === '' ? 0 : Number(e.target.value),
+                                quantite:
+                                  e.target.value === ''
+                                    ? 0
+                                    : Number(e.target.value),
                               })
                             }
                             disabled={isLocked}
@@ -372,7 +443,10 @@ export default function EditerBon() {
                             value={l.prixUnitaire || ''}
                             onChange={(e) =>
                               updateLigne(l.id, {
-                                prixUnitaire: e.target.value === '' ? 0 : Number(e.target.value),
+                                prixUnitaire:
+                                  e.target.value === ''
+                                    ? 0
+                                    : Number(e.target.value),
                               })
                             }
                             disabled={isLocked}

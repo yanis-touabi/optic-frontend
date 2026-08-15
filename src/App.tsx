@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import AppLayout from './components/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './lib/auth';
+import { ScannerProvider } from './contexts/ScannerProvider';
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
 import Produits from './pages/Produits';
@@ -19,6 +20,7 @@ import ImprimerOrdonnance from './pages/ImprimerOrdonnance';
 import Auth from './pages/Auth';
 import ResetPassword from './pages/ResetPassword';
 import ConfirmEmail from './pages/ConfirmEmail';
+import MobileScanner from './pages/MobileScanner';
 import Profil from './pages/Profil';
 import AdminUsers from './pages/AdminUsers';
 import Fournisseurs from './pages/Fournisseurs';
@@ -34,111 +36,114 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/confirm-email" element={<ConfirmEmail />} />
-            <Route
-              element={
-                <ProtectedRoute>
-                  <AppLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/profil" element={<Profil />} />
+          <ScannerProvider>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/scan/:token" element={<MobileScanner />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/confirm-email" element={<ConfirmEmail />} />
               <Route
-                path="/admin/utilisateurs"
                 element={
-                  <ProtectedRoute requireRole="ADMIN">
-                    <AdminUsers />
+                  <ProtectedRoute>
+                    <AppLayout />
                   </ProtectedRoute>
                 }
-              />
-              <Route
-                path="/clients"
-                element={
-                  <ProtectedRoute requireRole="ADMIN">
-                    <Clients />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/produits"
-                element={
-                  <ProtectedRoute requireRole="ADMIN">
-                    <Produits />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/fournisseurs"
-                element={
-                  <ProtectedRoute requireRole="ADMIN">
-                    <Fournisseurs />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/ordonnances" element={<Ordonnances />} />
-              <Route
-                path="/rapports"
-                element={
-                  <ProtectedRoute requireRole="ADMIN">
-                    <Rapports />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/commandes"
-                element={
-                  <ProtectedRoute requireRole="ADMIN">
-                    <Commandes />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/commandes/nouveau"
-                element={
-                  <ProtectedRoute requireRole="ADMIN">
-                    <NouveauBon />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/commandes/:id"
-                element={
-                  <ProtectedRoute requireRole="ADMIN">
-                    <CommandeDetail />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/commandes/:id/modifier"
-                element={
-                  <ProtectedRoute requireRole="ADMIN">
-                    <EditerBon />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/commandes/:id/imprimer"
-                element={
-                  <ProtectedRoute requireRole="ADMIN">
-                    <ImprimerBon />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/ordonnances/:id/imprimer"
-                element={
-                  <ProtectedRoute requireRole="ADMIN">
-                    <ImprimerOrdonnance />
-                  </ProtectedRoute>
-                }
-              />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              >
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/profil" element={<Profil />} />
+                <Route
+                  path="/admin/utilisateurs"
+                  element={
+                    <ProtectedRoute requireRole="ADMIN">
+                      <AdminUsers />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/clients"
+                  element={
+                    <ProtectedRoute requireRole="ADMIN">
+                      <Clients />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/produits"
+                  element={
+                    <ProtectedRoute requireRole="ADMIN">
+                      <Produits />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/fournisseurs"
+                  element={
+                    <ProtectedRoute requireRole="ADMIN">
+                      <Fournisseurs />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/ordonnances" element={<Ordonnances />} />
+                <Route
+                  path="/rapports"
+                  element={
+                    <ProtectedRoute requireRole="ADMIN">
+                      <Rapports />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/commandes"
+                  element={
+                    <ProtectedRoute requireRole="ADMIN">
+                      <Commandes />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/commandes/nouveau"
+                  element={
+                    <ProtectedRoute requireRole="ADMIN">
+                      <NouveauBon />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/commandes/:id"
+                  element={
+                    <ProtectedRoute requireRole="ADMIN">
+                      <CommandeDetail />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/commandes/:id/modifier"
+                  element={
+                    <ProtectedRoute requireRole="ADMIN">
+                      <EditerBon />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/commandes/:id/imprimer"
+                  element={
+                    <ProtectedRoute requireRole="ADMIN">
+                      <ImprimerBon />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/ordonnances/:id/imprimer"
+                  element={
+                    <ProtectedRoute requireRole="ADMIN">
+                      <ImprimerOrdonnance />
+                    </ProtectedRoute>
+                  }
+                />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </ScannerProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
