@@ -5,7 +5,9 @@ export type ProductScanCandidate = {
   name?: string | null;
 };
 
-export function getProductScanQuery(product: ProductScanCandidate | null | undefined) {
+export function getProductScanQuery(
+  product: ProductScanCandidate | null | undefined,
+) {
   if (!product) return '';
 
   const barcode = (product.barcode ?? '').trim();

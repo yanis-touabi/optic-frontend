@@ -179,7 +179,11 @@ export default function NouveauBon() {
       ];
     });
     scanner.clearLastScannedState();
-  }, [scanner.lastScannedProduct, scanner.scanMode, scanner.clearLastScannedState]);
+  }, [
+    scanner.lastScannedProduct,
+    scanner.scanMode,
+    scanner.clearLastScannedState,
+  ]);
 
   const updateLigne = (id: string, patch: Partial<LocalLigne>) =>
     setLignes((l) => l.map((x) => (x.id === id ? { ...x, ...patch } : x)));

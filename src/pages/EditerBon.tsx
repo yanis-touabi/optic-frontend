@@ -184,7 +184,11 @@ export default function EditerBon() {
       ];
     });
     scanner.clearLastScannedState();
-  }, [scanner.lastScannedProduct, scanner.scanMode, scanner.clearLastScannedState]);
+  }, [
+    scanner.lastScannedProduct,
+    scanner.scanMode,
+    scanner.clearLastScannedState,
+  ]);
   const updateLigne = (lid: string, patch: Partial<LigneCommande>) =>
     setLignes((l) => l.map((x) => (x.id === lid ? { ...x, ...patch } : x)));
   const removeLigne = (lid: string) =>

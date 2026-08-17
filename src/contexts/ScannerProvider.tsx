@@ -110,10 +110,13 @@ export const ScannerProvider: React.FC<{ children: React.ReactNode }> = ({
     setLastScannedProduct(null);
   }, []);
 
-  const setScanModeSafe = useCallback((m: ScanMode) => {
-    setScanMode(m);
-    if (m === 'NONE') clearLastScannedState();
-  }, [clearLastScannedState]);
+  const setScanModeSafe = useCallback(
+    (m: ScanMode) => {
+      setScanMode(m);
+      if (m === 'NONE') clearLastScannedState();
+    },
+    [clearLastScannedState],
+  );
 
   const startScanSession = useCallback(async () => {
     if (scanSessionId && pairingToken) {

@@ -37,9 +37,12 @@ const catLabel: Record<string, string> = {
 };
 
 const catColors: Record<string, string> = {
-  MONTURE: 'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300',
-  VERRE: 'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300',
-  ACCESSOIRE: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300',
+  MONTURE:
+    'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300',
+  VERRE:
+    'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300',
+  ACCESSOIRE:
+    'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300',
 };
 
 // ── Stock urgency helpers ──
@@ -95,8 +98,8 @@ function MarginIndicator({ margin }: { margin?: number | string | null }) {
         good
           ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
           : ok
-          ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-          : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
       }`}
     >
       <TrendingUp className="h-3 w-3" />
@@ -141,10 +144,14 @@ export default function ProductDetailSheet({
             ) : (
               <AlertTriangle className={`h-4 w-4 ${urgency.color}`} />
             )}
-            <span className={`text-xs font-bold uppercase tracking-wide ${urgency.color}`}>
+            <span
+              className={`text-xs font-bold uppercase tracking-wide ${urgency.color}`}
+            >
               {urgency.label}
             </span>
-            <span className={`ml-auto text-xs font-bold tabular-nums ${urgency.color}`}>
+            <span
+              className={`ml-auto text-xs font-bold tabular-nums ${urgency.color}`}
+            >
               {product.stock} unité{product.stock !== 1 ? 's' : ''}
             </span>
           </div>
@@ -277,7 +284,9 @@ export default function ProductDetailSheet({
                 <Hash className="h-3.5 w-3.5" />
                 SKU / Référence
               </span>
-              <span className="text-sm font-mono font-medium">{product.sku}</span>
+              <span className="text-sm font-mono font-medium">
+                {product.sku}
+              </span>
             </div>
           )}
 
@@ -288,7 +297,9 @@ export default function ProductDetailSheet({
                 <Barcode className="h-3.5 w-3.5" />
                 Code-barres
               </span>
-              <span className="text-sm font-mono font-medium">{product.barcode}</span>
+              <span className="text-sm font-mono font-medium">
+                {product.barcode}
+              </span>
             </div>
           )}
 
@@ -309,7 +320,9 @@ export default function ProductDetailSheet({
               <Calendar className="h-3.5 w-3.5" />
               Ajouté le
             </span>
-            <span className="text-sm font-medium">{formatDate(product.createdAt)}</span>
+            <span className="text-sm font-medium">
+              {formatDate(product.createdAt)}
+            </span>
           </div>
         </div>
 

@@ -247,7 +247,10 @@ export default function Produits() {
     }
   }, [scanner.phoneConnected, scannerOpen]);
 
-  const lastScannedProduct = scanner.lastScannedProduct as Produit | null | undefined;
+  const lastScannedProduct = scanner.lastScannedProduct as
+    | Produit
+    | null
+    | undefined;
   const lastScannedMode = scanner.scanMode;
   const clearLastScannedState = scanner.clearLastScannedState;
 
@@ -289,8 +292,8 @@ export default function Produits() {
       toast.success(`Produit trouvé : ${data.nom}`);
     } catch (error: unknown) {
       const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? 'Produit introuvable';
+        (error as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message ?? 'Produit introuvable';
       toast.error(message);
     }
   };
@@ -412,8 +415,7 @@ export default function Produits() {
       }
       setOpen(false);
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Erreur';
+      const message = error instanceof Error ? error.message : 'Erreur';
       toast.error(message);
     }
   };
@@ -424,8 +426,7 @@ export default function Produits() {
       await deleteMut.mutateAsync(id);
       toast.success('Produit supprimé');
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Erreur';
+      const message = error instanceof Error ? error.message : 'Erreur';
       toast.error(message);
     }
   };

@@ -29,7 +29,8 @@ const catColors: Record<ProduitCategorie, string> = {
 };
 
 function StockBadge({ stock }: { stock?: number }) {
-  if (stock == null) return <span className="text-sm text-muted-foreground">—</span>;
+  if (stock == null)
+    return <span className="text-sm text-muted-foreground">—</span>;
   const color =
     stock === 0
       ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300'
@@ -166,9 +167,7 @@ export function ProduitDetailModal({
               />
               <DetailField
                 label="Prix public"
-                value={
-                  produit.prix != null ? formatDZD(produit.prix) : null
-                }
+                value={produit.prix != null ? formatDZD(produit.prix) : null}
               />
               <div className="flex flex-col gap-0.5">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
