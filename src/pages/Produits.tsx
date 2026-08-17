@@ -76,6 +76,10 @@ import { toast } from 'sonner';
 import { useSortableTable } from '@/hooks/use-sortable-table';
 import { SortableTableHead } from '@/components/SortableTableHead';
 import { apiClient } from '@/api/apiClient';
+import { useScanner } from '@/contexts/ScannerProvider';
+import ScannerButton from '@/components/ScannerButton';
+import ScannerDialog from '@/components/ScannerDialog';
+import { getProductScanQuery } from '@/lib/product-scan';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -125,10 +129,12 @@ type CatFilter = (typeof ALL_CATS)[number];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function MarginBadge({ margin }: { margin?: number }) {
-  if (margin == null) return null;
-  const good = margin >= 30;
-  const ok = margin >= 15;
+function MarginBadge({ margin }: { margin?: number | string | null }) {
+  const numericMargin = Number(margin);
+  if (margin == null || !Number.isFinite(numericMargin)) return null;
+
+  const good = numericMargin >= 30;
+  const ok = numericMargin >= 15;
   return (
     <span
       className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${
@@ -144,7 +150,7 @@ function MarginBadge({ margin }: { margin?: number }) {
       ) : ok ? null : (
         <TrendingDown className="h-2.5 w-2.5" />
       )}
-      {margin.toFixed(1)}%
+      {numericMargin.toFixed(1)}%
     </span>
   );
 }
@@ -191,6 +197,7 @@ export default function Produits() {
   const [stockFilter, setStockFilter] = useState<StockStatus | null>(
     initialStockFilter,
   );
+  const stockParam = searchParams.get('stock');
 
   const { sort, order, onSort, directionFor } = useSortableTable(
     sortParam ?? 'nom',
@@ -204,10 +211,10 @@ export default function Produits() {
 
   // Sync stock filter from URL query param on mount/navigation
   useEffect(() => {
-    const urlStatus = stockStatusFromQuery(searchParams.get('stock'));
+    const urlStatus = stockStatusFromQuery(stockParam);
     setStockFilter(urlStatus);
     setPage(0);
-  }, [searchParams.get('stock')]);
+  }, [stockParam]);
 
   // When stockAlert filter is on, override the search with stock<=2 equivalent.
   // The backend sorts by stock asc so low/zero items surface first.
@@ -227,6 +234,66 @@ export default function Produits() {
   const createMut = useCreateProduit();
   const updateMut = useUpdateProduit();
   const deleteMut = useDeleteProduit();
+  const scanner = useScanner();
+  const [scannerOpen, setScannerOpen] = useState(false);
+
+  useEffect(() => {
+    scanner.setScanMode('PRODUCT');
+  }, [scanner]);
+
+  useEffect(() => {
+    if (scanner.phoneConnected && scannerOpen) {
+      setScannerOpen(false);
+    }
+  }, [scanner.phoneConnected, scannerOpen]);
+
+  const lastScannedProduct = scanner.lastScannedProduct as Produit | null | undefined;
+  const lastScannedMode = scanner.scanMode;
+  const clearLastScannedState = scanner.clearLastScannedState;
+
+  useEffect(() => {
+    const product = lastScannedProduct;
+    if (!product) return;
+    if (lastScannedMode !== 'PRODUCT') return;
+
+    const scannedQuery = getProductScanQuery(product);
+    if (!scannedQuery) return;
+
+    setQ(scannedQuery);
+    setPage(0);
+    const timer = window.setTimeout(() => {
+      openView(product);
+    }, 0);
+    clearLastScannedState();
+
+    return () => window.clearTimeout(timer);
+  }, [lastScannedProduct, lastScannedMode, clearLastScannedState]);
+
+  const searchProductByBarcode = async (code?: string) => {
+    const cleanCode = (code ?? '').trim();
+    if (!cleanCode) {
+      toast.error('Saisissez un code-barres ou scannez un produit');
+      return;
+    }
+
+    try {
+      const { data } = await apiClient.get<Produit>(
+        '/products/barcode/search',
+        {
+          params: { code: cleanCode },
+        },
+      );
+      setQ(data.nom);
+      setPage(0);
+      openView(data);
+      toast.success(`Produit trouvé : ${data.nom}`);
+    } catch (error: unknown) {
+      const message =
+        (error as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? 'Produit introuvable';
+      toast.error(message);
+    }
+  };
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Produit | null>(null);
@@ -338,12 +405,16 @@ export default function Produits() {
         }
         // if 'none' → omit barcode entirely for creation
 
-        await createMut.mutateAsync(payload as any);
+        await createMut.mutateAsync(
+          payload as Parameters<typeof createMut.mutateAsync>[0],
+        );
         toast.success('Produit ajouté');
       }
       setOpen(false);
-    } catch (e: any) {
-      toast.error(e.message ?? 'Erreur');
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Erreur';
+      toast.error(message);
     }
   };
 
@@ -352,8 +423,10 @@ export default function Produits() {
     try {
       await deleteMut.mutateAsync(id);
       toast.success('Produit supprimé');
-    } catch (e: any) {
-      toast.error(e.message ?? 'Erreur');
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Erreur';
+      toast.error(message);
     }
   };
 
@@ -385,6 +458,31 @@ export default function Produits() {
         description="Catalogue de montures, verres et accessoires"
         actions={
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                const value = window.prompt('Code-barres du produit');
+                if (value && value.trim()) {
+                  void searchProductByBarcode(value.trim());
+                }
+              }}
+            >
+              <Barcode className="h-4 w-4" />
+              Scanner
+            </Button>
+            <ScannerButton
+              onOpen={async () => {
+                scanner.setScanMode('PRODUCT');
+                try {
+                  await scanner.startScanSession();
+                  setScannerOpen(true);
+                } catch (error) {
+                  toast.error(
+                    'Impossible de démarrer le scan avec téléphone. Vérifiez la connexion backend.',
+                  );
+                }
+              }}
+            />
             <Button variant="outline" onClick={handleExport}>
               <Download className="h-4 w-4" />
               Exporter CSV
@@ -395,6 +493,16 @@ export default function Produits() {
             </Button>
           </div>
         }
+      />
+      <ScannerDialog
+        open={scannerOpen}
+        onClose={() => {
+          setScannerOpen(false);
+          if (!scanner.phoneConnected) {
+            scanner.setScanMode('NONE');
+            scanner.stopScanSession().catch(() => {});
+          }
+        }}
       />
       <div className="p-8 space-y-4">
         {/* ── Stock alert banner ── */}
@@ -428,6 +536,7 @@ export default function Produits() {
               className="pl-9"
             />
           </div>
+
           {/* Category filter pills */}
           <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
             {ALL_CATS.map((cat) => (

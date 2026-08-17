@@ -46,10 +46,14 @@ function StockBadge({ stock }: { stock?: number }) {
   );
 }
 
-function MarginBadge({ margin }: { margin?: number }) {
-  if (margin == null) return <span className="text-sm text-muted-foreground">—</span>;
-  const good = margin >= 30;
-  const ok = margin >= 15;
+function MarginBadge({ margin }: { margin?: number | string | null }) {
+  const numericMargin = Number(margin);
+  if (margin == null || !Number.isFinite(numericMargin)) {
+    return <span className="text-sm text-muted-foreground">—</span>;
+  }
+
+  const good = numericMargin >= 30;
+  const ok = numericMargin >= 15;
   return (
     <span
       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${
@@ -65,7 +69,7 @@ function MarginBadge({ margin }: { margin?: number }) {
       ) : ok ? null : (
         <TrendingDown className="h-3 w-3" />
       )}
-      {margin.toFixed(1)}%
+      {numericMargin.toFixed(1)}%
     </span>
   );
 }

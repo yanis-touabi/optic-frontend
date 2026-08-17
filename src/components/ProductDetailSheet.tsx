@@ -83,10 +83,12 @@ function stockUrgency(stock: number): {
   };
 }
 
-function MarginIndicator({ margin }: { margin?: number }) {
-  if (margin == null) return null;
-  const good = margin >= 30;
-  const ok = margin >= 15;
+function MarginIndicator({ margin }: { margin?: number | string | null }) {
+  const numericMargin = Number(margin);
+  if (margin == null || !Number.isFinite(numericMargin)) return null;
+
+  const good = numericMargin >= 30;
+  const ok = numericMargin >= 15;
   return (
     <span
       className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
@@ -98,7 +100,7 @@ function MarginIndicator({ margin }: { margin?: number }) {
       }`}
     >
       <TrendingUp className="h-3 w-3" />
-      {margin.toFixed(1)}%
+      {numericMargin.toFixed(1)}%
     </span>
   );
 }

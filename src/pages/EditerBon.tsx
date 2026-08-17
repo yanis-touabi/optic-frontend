@@ -59,6 +59,10 @@ export default function EditerBon() {
   const scanner = useScanner();
 
   useEffect(() => {
+    scanner.setScanMode('ORDER');
+  }, [scanner]);
+
+  useEffect(() => {
     if (scanner.phoneConnected && scannerOpen) {
       setScannerOpen(false);
     }
@@ -149,11 +153,10 @@ export default function EditerBon() {
 
   // react to remote scanner product found
   useEffect(() => {
-    if (!scanner.lastScannedProduct) return;
-    if (scanner.scanMode !== 'ORDER') return;
     const p = scanner.lastScannedProduct as any;
     if (!p?.id) return;
-    // add product to order using same logic as manual add
+    if (scanner.scanMode !== 'ORDER') return;
+
     setLignes((currentLignes) => {
       const existingIndex = currentLignes.findIndex(
         (ligne) => ligne.produitId === p.id,
@@ -180,7 +183,8 @@ export default function EditerBon() {
         },
       ];
     });
-  }, [scanner.lastScannedProduct, scanner.scanMode]);
+    scanner.clearLastScannedState();
+  }, [scanner.lastScannedProduct, scanner.scanMode, scanner.clearLastScannedState]);
   const updateLigne = (lid: string, patch: Partial<LigneCommande>) =>
     setLignes((l) => l.map((x) => (x.id === lid ? { ...x, ...patch } : x)));
   const removeLigne = (lid: string) =>

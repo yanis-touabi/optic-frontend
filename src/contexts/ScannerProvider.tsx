@@ -1,5 +1,6 @@
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -21,6 +22,7 @@ interface ScannerCtx {
   startScanSession: () => Promise<{ id: string; pairingToken: string }>;
   stopScanSession: () => Promise<void>;
   setScanMode: (m: ScanMode) => void;
+  clearLastScannedState: () => void;
 }
 
 const Ctx = createContext<ScannerCtx | null>(null);
@@ -103,19 +105,33 @@ export const ScannerProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, []);
 
-  const startScanSession = async () => {
+  const clearLastScannedState = useCallback(() => {
+    setLastScannedBarcode(null);
+    setLastScannedProduct(null);
+  }, []);
+
+  const setScanModeSafe = useCallback((m: ScanMode) => {
+    setScanMode(m);
+    if (m === 'NONE') clearLastScannedState();
+  }, [clearLastScannedState]);
+
+  const startScanSession = useCallback(async () => {
+    if (scanSessionId && pairingToken) {
+      return { id: scanSessionId, pairingToken };
+    }
+
     setPhoneConnected(false);
+    clearLastScannedState();
     const { data } = await apiClient.post('/scan-sessions');
     setScanSessionId(data.id);
     setPairingToken(data.pairingToken);
-    // ask socket to join session room
     if (socket && data.id) {
       socket.emit('scanner.join', { sessionId: data.id });
     }
     return { id: data.id, pairingToken: data.pairingToken };
-  };
+  }, [clearLastScannedState, pairingToken, scanSessionId, socket]);
 
-  const stopScanSession = async () => {
+  const stopScanSession = useCallback(async () => {
     if (!scanSessionId) return;
     try {
       await apiClient.delete(`/scan-sessions/${scanSessionId}`);
@@ -124,8 +140,10 @@ export const ScannerProvider: React.FC<{ children: React.ReactNode }> = ({
       setScanSessionId(null);
       setPairingToken(null);
       setPhoneConnected(false);
+      setScanMode('NONE');
+      clearLastScannedState();
     }
-  };
+  }, [clearLastScannedState, scanSessionId, socket]);
 
   const value = useMemo(
     () => ({
@@ -138,7 +156,8 @@ export const ScannerProvider: React.FC<{ children: React.ReactNode }> = ({
       lastScannedProduct,
       startScanSession,
       stopScanSession,
-      setScanMode: (m: ScanMode) => setScanMode(m),
+      setScanMode: setScanModeSafe,
+      clearLastScannedState,
     }),
     [
       connectionStatus,
@@ -148,6 +167,10 @@ export const ScannerProvider: React.FC<{ children: React.ReactNode }> = ({
       scanMode,
       lastScannedBarcode,
       lastScannedProduct,
+      startScanSession,
+      stopScanSession,
+      setScanModeSafe,
+      clearLastScannedState,
     ],
   );
 

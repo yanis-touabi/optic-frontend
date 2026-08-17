@@ -82,6 +82,10 @@ export default function NouveauBon() {
   const scanner = useScanner();
 
   useEffect(() => {
+    scanner.setScanMode('ORDER');
+  }, [scanner]);
+
+  useEffect(() => {
     if (scanner.phoneConnected && scannerOpen) {
       setScannerOpen(false);
     }
@@ -144,11 +148,10 @@ export default function NouveauBon() {
 
   // react to remote scanner product found
   useEffect(() => {
-    if (!scanner.lastScannedProduct) return;
-    if (scanner.scanMode !== 'ORDER') return;
     const p = scanner.lastScannedProduct as any;
     if (!p?.id) return;
-    // add product to order using same logic as manual add
+    if (scanner.scanMode !== 'ORDER') return;
+
     setLignes((currentLignes) => {
       const existingIndex = currentLignes.findIndex(
         (ligne) => ligne.produitId === p.id,
@@ -175,7 +178,8 @@ export default function NouveauBon() {
         },
       ];
     });
-  }, [scanner.lastScannedProduct, scanner.scanMode]);
+    scanner.clearLastScannedState();
+  }, [scanner.lastScannedProduct, scanner.scanMode, scanner.clearLastScannedState]);
 
   const updateLigne = (id: string, patch: Partial<LocalLigne>) =>
     setLignes((l) => l.map((x) => (x.id === id ? { ...x, ...patch } : x)));

@@ -156,6 +156,22 @@ export const usePaginatedProduits = (params: {
     queryFn: async () => fetchPaginated<Produit>('/products', params),
   });
 
+export const useProductByBarcode = (code?: string) =>
+  useQuery({
+    queryKey: ['product-by-barcode', code],
+    enabled: !!code?.trim(),
+    queryFn: async () => {
+      const { data } = await apiClient.get<Produit>(
+        '/products/barcode/search',
+        {
+          params: { code: code!.trim() },
+        },
+      );
+      return data;
+    },
+    staleTime: 30_000,
+  });
+
 export const useProductSuppliersSearch = (params: {
   query?: string;
   q?: string;
