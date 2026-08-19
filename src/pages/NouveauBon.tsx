@@ -284,32 +284,33 @@ export default function NouveauBon() {
           style={{ minHeight: 'calc(100vh - 72px - 4rem)' }}
         >
           <Card className="shadow-[var(--shadow-card)] overflow-hidden flex flex-col flex-1">
-            <CardContent className="grid grid-cols-3 gap-4 pt-6 px-6 flex-shrink-0">
-              <div className="flex flex-col gap-1.5">
-                <Label>Client</Label>
-                <ClientSelect value={clientId} onChange={handleClientChange} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label>Ordonnance</Label>
-                <OrdonnanceSelect
-                  clientId={effectiveClientId}
-                  value={ordonnanceId}
-                  onChange={setOrdonnanceId}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label>Date de livraison prévue</Label>
-                <Input
-                  type="date"
-                  value={dateLivraison}
-                  min={todayStr}
-                  onChange={(e) => setDateLivraison(e.target.value)}
-                />
+            <CardContent className="grid grid-cols-1 gap-4 pt-0 px-0 flex-shrink-0">
+              {/* ── Top section: Client / Ordonnance / Date ── */}
+              <div className="order-header-section grid grid-cols-3 gap-4 px-6 py-4 rounded-t-lg">
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-blue-800/80 font-medium text-xs uppercase tracking-wide">Client</Label>
+                  <ClientSelect value={clientId} onChange={handleClientChange} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-blue-800/80 font-medium text-xs uppercase tracking-wide">Ordonnance</Label>
+                  <OrdonnanceSelect
+                    clientId={effectiveClientId}
+                    value={ordonnanceId}
+                    onChange={setOrdonnanceId}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-blue-800/80 font-medium text-xs uppercase tracking-wide">Date de livraison prévue</Label>
+                  <Input
+                    type="date"
+                    value={dateLivraison}
+                    min={todayStr}
+                    onChange={(e) => setDateLivraison(e.target.value)}
+                  />
+                </div>
               </div>
 
-              <div className="col-span-3 -mx-6 border-t" />
-
-              <div className="col-span-3 -mx-6 px-6">
+              <div className="px-6 pt-1 pb-4">
                 <div className="flex gap-2 mb-4">
                   <ProduitSelect
                     value={pickProduit?.id}
@@ -350,7 +351,7 @@ export default function NouveauBon() {
             </CardContent>
 
             {/* Table grows to fill remaining card height */}
-            <div className="flex-1 overflow-auto -mt-2">
+            <div className="order-table-section flex-1 overflow-auto -mt-2">
               <Table className="table-fixed w-full [&>div]:overflow-visible">
                 <TableHeader>
                   <TableRow>

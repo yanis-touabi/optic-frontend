@@ -56,6 +56,21 @@
     --shadow-card:
       0 1px 3px hsl(215 30% 15% / 0.06), 0 1px 2px hsl(215 30% 15% / 0.04);
 
+    /* ── Nouveau bon de commande — header section ── */
+    --order-header-bg: linear-gradient(
+      135deg,
+      hsl(214 100% 93%),
+      hsl(199 89% 93%) 60%,
+      hsl(214 100% 97%)
+    );
+    --order-header-border: hsl(213 97% 87%);
+
+    /* ── Nouveau bon de commande — articles table section ── */
+    --order-table-bg: hsl(38 60% 97%);
+    --order-table-header-bg: hsl(38 45% 93%);
+    --order-table-stripe: hsl(38 50% 95%);
+    --order-table-border: hsl(38 30% 88%);
+
     --sidebar-background: 215 35% 16%;
     --sidebar-foreground: 210 30% 92%;
     --sidebar-primary: 195 90% 55%;
@@ -204,4 +219,24 @@ input[type="number"] {
   display: none;
   height: 0;
   width: 0;
+}
+
+/* ── Nouveau bon de commande — header section ─────────────────────────────── */
+.order-header-section {
+  background: var(--order-header-bg);
+  border-bottom: 1px solid var(--order-header-border);
+}
+
+/* ── Nouveau bon de commande — articles table section ──────────────────────── */
+.order-table-section {
+  background: var(--order-table-bg);
+}
+
+.order-table-section thead tr {
+  background: var(--order-table-header-bg);
+  border-bottom: 1px solid var(--order-table-border);
+}
+
+.order-table-section tbody tr:nth-child(even) {
+  background: var(--order-table-stripe);
 }
