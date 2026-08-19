@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useInfiniteClients, useClient } from '@/lib/data';
+import React, { useState, useCallback } from 'react';
+import { useInfiniteProduits, useProduit } from '@/lib/data';
 import { useDebounce } from '@/hooks/use-debounce';
 import {
   Popover,
@@ -17,15 +17,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Client } from '@/lib/types';
+import { formatDZD } from '@/lib/format';
+import type { Produit } from '@/lib/types';
 
-interface ClientSelectProps {
+interface ProduitSelectProps {
   value?: string;
-  onChange: (value: string) => void;
+  onChange: (produit: Produit | null) => void;
   disabled?: boolean;
 }
 
-export function ClientSelect({ value, onChange, disabled }: ClientSelectProps) {
+export function ProduitSelect({ value, onChange, disabled }: ProduitSelectProps) {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 300);
@@ -36,12 +37,12 @@ export function ClientSelect({ value, onChange, disabled }: ClientSelectProps) {
     hasNextPage,
     isFetchingNextPage,
     isLoading,
-  } = useInfiniteClients(debouncedSearch);
+  } = useInfiniteProduits(debouncedSearch);
 
   // For hydration: if the selected value is not in the loaded list, fetch it
-  const { data: selectedClient } = useClient(value);
+  const { data: selectedProduit } = useProduit(value);
 
-  const clients = data?.pages.flatMap((page) => page.content) || [];
+  const produits = data?.pages.flatMap((page) => page.content) || [];
 
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
@@ -56,8 +57,8 @@ export function ClientSelect({ value, onChange, disabled }: ClientSelectProps) {
   );
 
   // If a value exists, find it in the current list or use the hydrated one
-  const selectedClientDisplay = value
-    ? clients.find((c) => c.id === value) || selectedClient
+  const selectedProduitDisplay = value
+    ? produits.find((p) => p.id === value) || selectedProduit
     : null;
 
   return (
@@ -67,59 +68,52 @@ export function ClientSelect({ value, onChange, disabled }: ClientSelectProps) {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between font-normal"
+          className="flex-1 justify-between font-normal"
           disabled={disabled}
         >
-          {selectedClientDisplay
-            ? `${selectedClientDisplay.prenom} ${selectedClientDisplay.nom}`
-            : 'Choisir un client...'}
+          {selectedProduitDisplay
+            ? `${selectedProduitDisplay.nom}${
+                selectedProduitDisplay.marque ? ` — ${selectedProduitDisplay.marque}` : ''
+              }`
+            : 'Choisir un produit...'}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0" align="start">
+      <PopoverContent className="w-[400px] p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Rechercher un client..."
+            placeholder="Rechercher un produit..."
             value={searchTerm}
             onValueChange={setSearchTerm}
           />
           <CommandList onScroll={handleScroll}>
             {isLoading && <div className="p-4 text-center text-sm text-muted-foreground">Chargement...</div>}
-            {!isLoading && clients.length === 0 && (
-              <CommandEmpty>Aucun client trouvé.</CommandEmpty>
+            {!isLoading && produits.length === 0 && (
+              <CommandEmpty>Aucun produit trouvé.</CommandEmpty>
             )}
             <CommandGroup>
-              <CommandItem
-                value=""
-                onSelect={() => {
-                  onChange('');
-                  setOpen(false);
-                }}
-              >
-                <Check
-                  className={cn(
-                    'mr-2 h-4 w-4',
-                    !value ? 'opacity-100' : 'opacity-0',
-                  )}
-                />
-                Aucun client (anonyme)
-              </CommandItem>
-              {clients.map((c: Client) => (
+              {produits.map((p: Produit) => (
                 <CommandItem
-                  key={c.id}
-                  value={c.id}
+                  key={p.id}
+                  value={p.id}
                   onSelect={() => {
-                    onChange(c.id);
+                    onChange(p);
                     setOpen(false);
                   }}
                 >
                   <Check
                     className={cn(
                       'mr-2 h-4 w-4',
-                      value === c.id ? 'opacity-100' : 'opacity-0',
+                      value === p.id ? 'opacity-100' : 'opacity-0',
                     )}
                   />
-                  {c.prenom} {c.nom}
+                  <div className="flex flex-col">
+                    <span>{p.nom}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {formatDZD(p.prix)} — Stock : {p.stock}
+                      {p.sku ? ` — SKU : ${p.sku}` : ''}
+                    </span>
+                  </div>
                 </CommandItem>
               ))}
               {isFetchingNextPage && (

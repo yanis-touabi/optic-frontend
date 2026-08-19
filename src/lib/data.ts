@@ -156,6 +156,31 @@ export const usePaginatedProduits = (params: {
     queryFn: async () => fetchPaginated<Produit>('/products', params),
   });
 
+export const useProduit = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['produit', id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data } = await apiClient.get<Produit>(`/products/${id}`);
+      return data;
+    },
+  });
+
+export const useInfiniteProduits = (q?: string) =>
+  useInfiniteQuery({
+    queryKey: ['produits', 'infinite', q],
+    initialPageParam: 0,
+    queryFn: async ({ pageParam = 0 }) => {
+      const params: any = { page: pageParam, size: DEFAULT_PAGE_SIZE };
+      if (q) params.q = q;
+      return fetchPaginated<Produit>('/products', params);
+    },
+    getNextPageParam: (lastPage) => {
+      if (lastPage.last) return undefined;
+      return lastPage.page + 1;
+    },
+  });
+
 export const useProductByBarcode = (code?: string) =>
   useQuery({
     queryKey: ['product-by-barcode', code],

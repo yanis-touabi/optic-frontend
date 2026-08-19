@@ -6,7 +6,7 @@ export function StockAlert({ issues }: { issues: StockIssue[] }) {
   return (
     <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
       <div className="flex items-center gap-2 font-medium text-destructive mb-2">
-        <AlertTriangle className="h-4 w-4" />
+        <AlertTriangle className="h-4 w-4 text-red-500" />
         Stock insuffisant
       </div>
       <ul className="space-y-1 text-destructive/90 list-disc pl-5">

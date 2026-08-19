@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
   Plus,
@@ -10,6 +10,9 @@ import {
   X,
   Link2,
 } from 'lucide-react';
+import ScannerButton from '@/components/ScannerButton';
+import ScannerDialog from '@/components/ScannerDialog';
+import { useScanner } from '@/contexts/ScannerProvider';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -115,6 +118,8 @@ export default function Fournisseurs() {
   const [productPage, setProductPage] = useState(0);
   const [productPageSize, setProductPageSize] = useState(10);
   const [productSuggestionsOpen, setProductSuggestionsOpen] = useState(false);
+  const [supplierScannerOpen, setSupplierScannerOpen] = useState(false);
+  const scanner = useScanner();
 
   // Dialog state
   const [createOpen, setCreateOpen] = useState(false);
@@ -163,8 +168,33 @@ export default function Fournisseurs() {
     } else {
       setSearch('');
       setPage(0);
+      scanner.setScanMode('PRODUCT');
     }
   };
+
+  // React to barcode scans while in product-search mode
+  useEffect(() => {
+    const p = scanner.lastScannedProduct as any;
+    if (!p?.id) return;
+    if (scanner.scanMode !== 'PRODUCT') return;
+    if (searchMode !== 'product') return;
+    const query = p.sku ?? p.nom;
+    setProductSearch(query);
+    setProductPage(0);
+    setSupplierScannerOpen(false);
+    scanner.clearLastScannedState();
+  }, [
+    scanner.lastScannedProduct,
+    scanner.scanMode,
+    scanner.clearLastScannedState,
+    searchMode,
+  ]);
+
+  useEffect(() => {
+    if (scanner.phoneConnected && supplierScannerOpen) {
+      setSupplierScannerOpen(false);
+    }
+  }, [scanner.phoneConnected, supplierScannerOpen]);
 
   const handleExport = () => {
     if (!data?.content.length) return;
@@ -232,86 +262,108 @@ export default function Fournisseurs() {
             />
           </div>
         ) : (
-          <div className="relative max-w-sm w-full sm:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Nom du produit ou marque…"
-              value={productSearch}
-              onChange={(e) => {
-                setProductSearch(e.target.value);
-                setProductPage(0);
-              }}
-              onFocus={() => setProductSuggestionsOpen(true)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  // Do not auto-select the first suggestion on Enter.
-                  // If the user typed a query and presses Enter without
-                  // explicitly selecting a suggestion, commit the typed
-                  // input as-is and close the suggestions.
+          <div className="flex items-start gap-2 max-w-sm w-full sm:w-auto">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Nom du produit ou marque…"
+                value={productSearch}
+                onChange={(e) => {
+                  setProductSearch(e.target.value);
                   setProductPage(0);
-                  setProductSuggestionsOpen(false);
-                  (e.target as HTMLInputElement).blur();
+                }}
+                onFocus={() => setProductSuggestionsOpen(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setProductPage(0);
+                    setProductSuggestionsOpen(false);
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+                className="pl-9"
+              />
+              {(productSuggestions.data as any)?.exactSkuMatch ? (
+                <div className="absolute right-0 top-full mt-2 mr-1 text-xs text-muted-foreground">
+                  Correspondance SKU exacte
+                </div>
+              ) : null}
+              {productSearch.trim() &&
+              productSuggestions.data?.content.length &&
+              productSuggestionsOpen ? (
+                <div className="absolute z-20 mt-2 w-full rounded-md border bg-popover p-2 shadow-lg">
+                  {(productSuggestions.data as any)?.exactSkuMatch ? (
+                    <div className="px-2 pb-1 text-xs text-muted-foreground">
+                      Résultat exact trouvé par SKU
+                    </div>
+                  ) : null}
+                  <div className="flex flex-col gap-1">
+                    {productSuggestions.data.content.slice(0, 5).map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className="flex flex-col items-start justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-muted"
+                        onClick={() => {
+                          const exact = (productSuggestions.data as any)
+                            ?.exactSkuMatch;
+                          setProductSearch(
+                            exact && item.sku ? item.sku : item.nom,
+                          );
+                          setProductPage(0);
+                          setProductSuggestionsOpen(false);
+                        }}
+                      >
+                        <div className="w-full flex items-center gap-2">
+                          <span className="font-medium truncate">{item.nom}</span>
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] px-1.5 py-0.5 ml-auto"
+                          >
+                            {item.categorie}
+                          </Badge>
+                        </div>
+                        <div className="w-full text-xs text-muted-foreground mt-1 truncate">
+                          {[
+                            item.marque || undefined,
+                            item.modele || undefined,
+                            item.sku || undefined,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+            <ScannerButton
+              onOpen={async () => {
+                scanner.setScanMode('PRODUCT');
+                try {
+                  await scanner.startScanSession();
+                  setSupplierScannerOpen(true);
+                } catch {
+                  toast.error(
+                    'Impossible de démarrer le scan. Vérifiez la connexion backend.',
+                  );
                 }
               }}
-              className="pl-9"
             />
-            {(productSuggestions.data as any)?.exactSkuMatch ? (
-              <div className="absolute right-0 top-full mt-2 mr-1 text-xs text-muted-foreground">
-                Correspondance SKU exacte
-              </div>
-            ) : null}
-            {productSearch.trim() &&
-            productSuggestions.data?.content.length &&
-            productSuggestionsOpen ? (
-              <div className="absolute z-20 mt-2 w-full rounded-md border bg-popover p-2 shadow-lg">
-                {(productSuggestions.data as any)?.exactSkuMatch ? (
-                  <div className="px-2 pb-1 text-xs text-muted-foreground">
-                    Résultat exact trouvé par SKU
-                  </div>
-                ) : null}
-                <div className="flex flex-col gap-1">
-                  {productSuggestions.data.content.slice(0, 5).map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      className="flex flex-col items-start justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-muted"
-                      onClick={() => {
-                        const exact = (productSuggestions.data as any)
-                          ?.exactSkuMatch;
-                        setProductSearch(
-                          exact && item.sku ? item.sku : item.nom,
-                        );
-                        setProductPage(0);
-                        setProductSuggestionsOpen(false);
-                      }}
-                    >
-                      <div className="w-full flex items-center gap-2">
-                        <span className="font-medium truncate">{item.nom}</span>
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] px-1.5 py-0.5 ml-auto"
-                        >
-                          {item.categorie}
-                        </Badge>
-                      </div>
-                      <div className="w-full text-xs text-muted-foreground mt-1 truncate">
-                        {[
-                          item.marque || undefined,
-                          item.modele || undefined,
-                          item.sku || undefined,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
           </div>
         )}
       </div>
+
+      <ScannerDialog
+        open={supplierScannerOpen}
+        onClose={() => {
+          setSupplierScannerOpen(false);
+          if (!scanner.phoneConnected) {
+            scanner.setScanMode('NONE');
+            scanner.stopScanSession().catch(() => {});
+          }
+        }}
+      />
 
       {searchMode === 'product' ? (
         <div className="rounded-xl border bg-background p-4 space-y-4">

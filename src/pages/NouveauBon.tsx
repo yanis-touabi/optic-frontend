@@ -28,6 +28,7 @@ import {
   Loader2,
   Check,
   ChevronsUpDown,
+  AlertCircle,
 } from 'lucide-react';
 import { formatDZD } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -46,8 +47,9 @@ import {
 } from '@/components/ui/command';
 import { ClientSelect } from '@/components/ClientSelect';
 import { OrdonnanceSelect } from '@/components/OrdonnanceSelect';
-import { useProduits, useCreateCommande } from '@/lib/data';
-import type { LigneCommande } from '@/lib/types';
+import { ProduitSelect } from '@/components/ProduitSelect';
+import { useCreateCommande } from '@/lib/data';
+import type { LigneCommande, Produit } from '@/lib/types';
 import { checkStock } from '@/lib/stock-validation';
 import { StockAlert } from '@/components/StockAlert';
 import { toast } from 'sonner';
@@ -58,7 +60,6 @@ import { useScanner } from '@/contexts/ScannerProvider';
 type LocalLigne = LigneCommande;
 
 export default function NouveauBon() {
-  const { data: produits = [] } = useProduits();
   const createMut = useCreateCommande();
   const nav = useNavigate();
 
@@ -75,9 +76,9 @@ export default function NouveauBon() {
   const [lignes, setLignes] = useState<LocalLigne[]>([]);
   const [notes, setNotes] = useState('');
   const [dateLivraison, setDateLivraison] = useState('');
-  const [pickProduit, setPickProduit] = useState<string>('');
+  const [pickProduit, setPickProduit] = useState<Produit | null>(null);
+  const [selectedProduits, setSelectedProduits] = useState<Produit[]>([]);
 
-  const [produitOpen, setProduitOpen] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const scanner = useScanner();
 
@@ -107,14 +108,26 @@ export default function NouveauBon() {
   );
 
   const stockIssues = useMemo(
-    () => checkStock(lignes, produits),
-    [lignes, produits],
+    () => checkStock(lignes, selectedProduits),
+    [lignes, selectedProduits],
   );
 
   const addLigne = () => {
     if (!pickProduit) return;
-    const p = produits.find((x) => x.id === pickProduit);
-    if (!p) return;
+    const p = pickProduit;
+
+    // Bug 3: block adding products with zero stock
+    if (p.stock === 0) {
+      toast.error('Stock insuffisant', {
+        icon: <AlertCircle color="#dc2626" size={20}/>, 
+      });
+      return;
+    }
+
+    setSelectedProduits((prev) => {
+      if (!prev.find((x) => x.id === p.id)) return [...prev, p];
+      return prev;
+    });
 
     setLignes((currentLignes) => {
       const existingIndex = currentLignes.findIndex(
@@ -143,7 +156,7 @@ export default function NouveauBon() {
       ];
     });
 
-    setPickProduit('');
+    setPickProduit(null);
   };
 
   // react to remote scanner product found
@@ -151,6 +164,18 @@ export default function NouveauBon() {
     const p = scanner.lastScannedProduct as any;
     if (!p?.id) return;
     if (scanner.scanMode !== 'ORDER') return;
+
+    // Bug 3: block adding zero-stock products via scanner too
+    if (p.stock === 0) {
+      toast.error('Stock insuffisant');
+      scanner.clearLastScannedState();
+      return;
+    }
+
+    setSelectedProduits((prev) => {
+      if (!prev.find((x) => x.id === p.id)) return [...prev, p];
+      return prev;
+    });
 
     setLignes((currentLignes) => {
       const existingIndex = currentLignes.findIndex(
@@ -191,7 +216,6 @@ export default function NouveauBon() {
     setLignes((l) => l.filter((x) => x.id !== id));
 
   const save = async (printAfter: boolean) => {
-    if (!effectiveClientId) return toast.error('Sélectionnez un client');
     if (lignes.length === 0) return toast.error('Ajoutez au moins un produit');
     if (dateLivraison && dateLivraison < todayStr) {
       return toast.error(
@@ -206,7 +230,7 @@ export default function NouveauBon() {
 
     try {
       const id = await createMut.mutateAsync({
-        clientId: effectiveClientId,
+        clientId: effectiveClientId || undefined,
         ordonnanceId: ordonnanceId === 'none' ? undefined : ordonnanceId,
         lignes: lignes.map(({ id: _id, ...rest }) => rest),
         inclutPersonnalisation: false,
@@ -250,15 +274,12 @@ export default function NouveauBon() {
           </>
         }
       />
-      <div className="p-8 grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="p-8 grid gap-6 xl:grid-cols-4 lg:grid-cols-3">
+        <div className="xl:col-span-3 lg:col-span-2 space-y-6">
           <Card className="shadow-[var(--shadow-card)]">
-            <CardHeader>
-              <CardTitle className="text-base">Client & ordonnance</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
+            <CardContent className="grid grid-cols-2 gap-4 pt-6">
               <div className="flex flex-col gap-1.5">
-                <Label>Client *</Label>
+                <Label>Client</Label>
                 <ClientSelect value={clientId} onChange={handleClientChange} />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -281,65 +302,18 @@ export default function NouveauBon() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-[var(--shadow-card)]">
+          <Card className="shadow-[var(--shadow-card)] overflow-hidden">
             <CardHeader>
               <CardTitle className="text-base">Articles</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Popover open={produitOpen} onOpenChange={setProduitOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={produitOpen}
-                      className="flex-1 justify-between font-normal"
-                    >
-                      {pickProduit
-                        ? produits.find((p) => p.id === pickProduit)?.nom
-                        : 'Choisir un produit...'}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[400px] p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Rechercher un produit..." />
-                      <CommandList>
-                        <CommandEmpty>Aucun produit trouvé.</CommandEmpty>
-                        <CommandGroup>
-                          {produits.map((p) => (
-                            <CommandItem
-                              key={p.id}
-                              value={`${p.nom} ${p.marque || ''} ${p.sku || ''}`}
-                              onSelect={() => {
-                                setPickProduit(p.id);
-                                setProduitOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  'mr-2 h-4 w-4',
-                                  pickProduit === p.id
-                                    ? 'opacity-100'
-                                    : 'opacity-0',
-                                )}
-                              />
-                              <div className="flex flex-col">
-                                <span>{p.nom}</span>
-                                <span className="text-[10px] text-muted-foreground">
-                                  {formatDZD(p.prix)} — Stock : {p.stock}
-                                  {p.sku ? ` — SKU : ${p.sku}` : ''}
-                                </span>
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+            <CardContent className="space-y-4 px-0">
+              <div className="flex gap-2 px-6">
+                <ProduitSelect
+                  value={pickProduit?.id}
+                  onChange={setPickProduit}
+                />
                 <Button onClick={addLigne} disabled={!pickProduit}>
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-4 w-4 mr-2" />
                   Ajouter
                 </Button>
                 <ScannerButton
@@ -368,87 +342,92 @@ export default function NouveauBon() {
                 }}
               />
 
-              <StockAlert issues={stockIssues} />
-              <Table className="table-fixed w-full">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50%]">Désignation</TableHead>
-                    <TableHead className="w-[15%]">Qté</TableHead>
-                    <TableHead className="w-[15%]">P.U.</TableHead>
-                    <TableHead className="w-[15%] text-right">Total</TableHead>
-                    <TableHead className="w-[5%]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lignes.length === 0 ? (
+              <div className="px-6"><StockAlert issues={stockIssues} /></div>
+              <div>
+                <Table className="table-fixed w-full [&>div]:overflow-visible">
+                  <TableHeader>
                     <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="text-center text-muted-foreground py-6"
-                      >
-                        Aucun article
-                      </TableCell>
+                      <TableHead className="w-[25%] pl-6">Désignation</TableHead>
+                      <TableHead className="w-[8%]">Qté</TableHead>
+                      <TableHead className="w-[8%]">P.U.</TableHead>
+                      <TableHead className="w-[10%] text-right">Total</TableHead>
+                      <TableHead className="w-[5%]"></TableHead>
                     </TableRow>
-                  ) : (
-                    lignes.map((l) => (
-                      <TableRow key={l.id}>
-                        <TableCell>
-                          <Input
-                            value={l.designation}
-                            onChange={(e) =>
-                              updateLigne(l.id, { designation: e.target.value })
-                            }
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min={1}
-                            placeholder="0"
-                            value={l.quantite || ''}
-                            onChange={(e) =>
-                              updateLigne(l.id, {
-                                quantite:
-                                  e.target.value === ''
-                                    ? 0
-                                    : Number(e.target.value),
-                              })
-                            }
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="0"
-                            value={l.prixUnitaire || ''}
-                            onChange={(e) =>
-                              updateLigne(l.id, {
-                                prixUnitaire:
-                                  e.target.value === ''
-                                    ? 0
-                                    : Number(e.target.value),
-                              })
-                            }
-                          />
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatDZD(l.quantite * l.prixUnitaire)}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => removeLigne(l.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                  </TableHeader>
+                  <TableBody>
+                    {lignes.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={5}
+                          className="text-center text-muted-foreground py-6"
+                        >
+                          Aucun article
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      lignes.map((l) => (
+                        <TableRow key={l.id}>
+                        <TableCell className="min-w-0 w-[52%] pl-6">
+                            <Input
+                              size={1}
+                              value={l.designation}
+                              onChange={(e) =>
+                                updateLigne(l.id, { designation: e.target.value })
+                              }
+                            />
+                          </TableCell>
+                        <TableCell className="min-w-0 w-[10%]">
+                            <Input
+                              size={1}
+                              type="number"
+                              min={1}
+                              placeholder="0"
+                              value={l.quantite || ''}
+                              onChange={(e) =>
+                                updateLigne(l.id, {
+                                  quantite:
+                                    e.target.value === ''
+                                      ? 0
+                                      : Number(e.target.value),
+                                })
+                              }
+                            />
+                          </TableCell>
+                        <TableCell className="min-w-0 w-[18%]">
+                            <Input
+                              size={1}
+                              type="number"
+                              step="0.01"
+                              placeholder="0"
+                              value={l.prixUnitaire || ''}
+                              onChange={(e) =>
+                                updateLigne(l.id, {
+                                  prixUnitaire:
+                                    e.target.value === ''
+                                      ? 0
+                                      : Number(e.target.value),
+                                })
+                              }
+                            />
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {formatDZD(l.quantite * l.prixUnitaire)}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => removeLigne(l.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
 

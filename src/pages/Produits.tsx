@@ -459,18 +459,6 @@ export default function Produits() {
         description="Catalogue de montures, verres et accessoires"
         actions={
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                const value = window.prompt('Code-barres du produit');
-                if (value && value.trim()) {
-                  void searchProductByBarcode(value.trim());
-                }
-              }}
-            >
-              <Barcode className="h-4 w-4" />
-              Scanner
-            </Button>
             <ScannerButton
               onOpen={async () => {
                 scanner.setScanMode('PRODUCT');
