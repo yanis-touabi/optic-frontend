@@ -351,7 +351,7 @@ export default function NouveauBon() {
             </CardContent>
 
             {/* Table grows to fill remaining card height */}
-            <div className="order-table-section flex-1 overflow-auto -mt-2">
+            <div className="order-table-section flex-1 overflow-auto -mt-6">
               <Table className="table-fixed w-full [&>div]:overflow-visible">
                 <TableHeader>
                   <TableRow>
