@@ -119,7 +119,7 @@ export default function NouveauBon() {
     // Bug 3: block adding products with zero stock
     if (p.stock === 0) {
       toast.error('Stock insuffisant', {
-        icon: <AlertCircle color="#dc2626" size={20}/>, 
+        icon: <AlertCircle color="#dc2626" size={20} />,
       });
       return;
     }
@@ -274,10 +274,17 @@ export default function NouveauBon() {
           </>
         }
       />
-      <div className="p-8 grid gap-6 xl:grid-cols-4 lg:grid-cols-3">
-        <div className="xl:col-span-3 lg:col-span-2 space-y-6">
-          <Card className="shadow-[var(--shadow-card)]">
-            <CardContent className="grid grid-cols-2 gap-4 pt-6">
+      <div
+        className="p-8 grid gap-6 xl:grid-cols-4 lg:grid-cols-3 items-start"
+        style={{ minHeight: 'calc(100vh - 72px)' }}
+      >
+        {/* ── Left: unified card — grows to fill available height ── */}
+        <div
+          className="xl:col-span-3 lg:col-span-2 flex flex-col"
+          style={{ minHeight: 'calc(100vh - 72px - 4rem)' }}
+        >
+          <Card className="shadow-[var(--shadow-card)] overflow-hidden flex flex-col flex-1">
+            <CardContent className="grid grid-cols-3 gap-4 pt-6 px-6 flex-shrink-0">
               <div className="flex flex-col gap-1.5">
                 <Label>Client</Label>
                 <ClientSelect value={clientId} onChange={handleClientChange} />
@@ -290,7 +297,7 @@ export default function NouveauBon() {
                   onChange={setOrdonnanceId}
                 />
               </div>
-              <div>
+              <div className="flex flex-col gap-1.5">
                 <Label>Date de livraison prévue</Label>
                 <Input
                   type="date"
@@ -299,154 +306,141 @@ export default function NouveauBon() {
                   onChange={(e) => setDateLivraison(e.target.value)}
                 />
               </div>
-            </CardContent>
-          </Card>
 
-          <Card className="shadow-[var(--shadow-card)] overflow-hidden">
-            <CardHeader>
-              <CardTitle className="text-base">Articles</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 px-0">
-              <div className="flex gap-2 px-6">
-                <ProduitSelect
-                  value={pickProduit?.id}
-                  onChange={setPickProduit}
-                />
-                <Button onClick={addLigne} disabled={!pickProduit}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter
-                </Button>
-                <ScannerButton
-                  onOpen={async () => {
-                    scanner.setScanMode('ORDER');
-                    try {
-                      await scanner.startScanSession();
-                      setScannerOpen(true);
-                    } catch (error) {
-                      toast.error(
-                        'Unable to start the phone scanner. Check the backend connection.',
-                      );
+              <div className="col-span-3 -mx-6 border-t" />
+
+              <div className="col-span-3 -mx-6 px-6">
+                <div className="flex gap-2 mb-4">
+                  <ProduitSelect
+                    value={pickProduit?.id}
+                    onChange={setPickProduit}
+                  />
+                  <Button onClick={addLigne} disabled={!pickProduit}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter
+                  </Button>
+                  <ScannerButton
+                    onOpen={async () => {
+                      scanner.setScanMode('ORDER');
+                      try {
+                        await scanner.startScanSession();
+                        setScannerOpen(true);
+                      } catch (error) {
+                        toast.error(
+                          'Unable to start the phone scanner. Check the backend connection.',
+                        );
+                      }
+                    }}
+                  />
+                </div>
+
+                <ScannerDialog
+                  open={scannerOpen}
+                  onClose={() => {
+                    setScannerOpen(false);
+                    if (!scanner.phoneConnected) {
+                      scanner.setScanMode('NONE');
+                      scanner.stopScanSession().catch(() => {});
                     }
                   }}
                 />
+
+                <StockAlert issues={stockIssues} />
               </div>
+            </CardContent>
 
-              <ScannerDialog
-                open={scannerOpen}
-                onClose={() => {
-                  setScannerOpen(false);
-                  if (!scanner.phoneConnected) {
-                    scanner.setScanMode('NONE');
-                    scanner.stopScanSession().catch(() => {});
-                  }
-                }}
-              />
-
-              <div className="px-6"><StockAlert issues={stockIssues} /></div>
-              <div>
-                <Table className="table-fixed w-full [&>div]:overflow-visible">
-                  <TableHeader>
+            {/* Table grows to fill remaining card height */}
+            <div className="flex-1 overflow-auto -mt-2">
+              <Table className="table-fixed w-full [&>div]:overflow-visible">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[25%] pl-6">Désignation</TableHead>
+                    <TableHead className="w-[8%]">Qté</TableHead>
+                    <TableHead className="w-[8%]">P.U.</TableHead>
+                    <TableHead className="w-[10%] text-right">Total</TableHead>
+                    <TableHead className="w-[5%]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {lignes.length === 0 ? (
                     <TableRow>
-                      <TableHead className="w-[25%] pl-6">Désignation</TableHead>
-                      <TableHead className="w-[8%]">Qté</TableHead>
-                      <TableHead className="w-[8%]">P.U.</TableHead>
-                      <TableHead className="w-[10%] text-right">Total</TableHead>
-                      <TableHead className="w-[5%]"></TableHead>
+                      <TableCell
+                        colSpan={5}
+                        className="text-center text-muted-foreground py-6"
+                      >
+                        Aucun article
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {lignes.length === 0 ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={5}
-                          className="text-center text-muted-foreground py-6"
-                        >
-                          Aucun article
+                  ) : (
+                    lignes.map((l) => (
+                      <TableRow key={l.id}>
+                        <TableCell className="min-w-0 w-[52%] pl-6">
+                          <Input
+                            size={1}
+                            value={l.designation}
+                            onChange={(e) =>
+                              updateLigne(l.id, { designation: e.target.value })
+                            }
+                          />
+                        </TableCell>
+                        <TableCell className="min-w-0 w-[10%]">
+                          <Input
+                            size={1}
+                            type="number"
+                            min={1}
+                            placeholder="0"
+                            value={l.quantite || ''}
+                            onChange={(e) =>
+                              updateLigne(l.id, {
+                                quantite:
+                                  e.target.value === ''
+                                    ? 0
+                                    : Number(e.target.value),
+                              })
+                            }
+                          />
+                        </TableCell>
+                        <TableCell className="min-w-0 w-[18%]">
+                          <Input
+                            size={1}
+                            type="number"
+                            step="0.01"
+                            placeholder="0"
+                            value={l.prixUnitaire || ''}
+                            onChange={(e) =>
+                              updateLigne(l.id, {
+                                prixUnitaire:
+                                  e.target.value === ''
+                                    ? 0
+                                    : Number(e.target.value),
+                              })
+                            }
+                          />
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatDZD(l.quantite * l.prixUnitaire)}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => removeLigne(l.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
                         </TableCell>
                       </TableRow>
-                    ) : (
-                      lignes.map((l) => (
-                        <TableRow key={l.id}>
-                        <TableCell className="min-w-0 w-[52%] pl-6">
-                            <Input
-                              size={1}
-                              value={l.designation}
-                              onChange={(e) =>
-                                updateLigne(l.id, { designation: e.target.value })
-                              }
-                            />
-                          </TableCell>
-                        <TableCell className="min-w-0 w-[10%]">
-                            <Input
-                              size={1}
-                              type="number"
-                              min={1}
-                              placeholder="0"
-                              value={l.quantite || ''}
-                              onChange={(e) =>
-                                updateLigne(l.id, {
-                                  quantite:
-                                    e.target.value === ''
-                                      ? 0
-                                      : Number(e.target.value),
-                                })
-                              }
-                            />
-                          </TableCell>
-                        <TableCell className="min-w-0 w-[18%]">
-                            <Input
-                              size={1}
-                              type="number"
-                              step="0.01"
-                              placeholder="0"
-                              value={l.prixUnitaire || ''}
-                              onChange={(e) =>
-                                updateLigne(l.id, {
-                                  prixUnitaire:
-                                    e.target.value === ''
-                                      ? 0
-                                      : Number(e.target.value),
-                                })
-                              }
-                            />
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatDZD(l.quantite * l.prixUnitaire)}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => removeLigne(l.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-[var(--shadow-card)]">
-            <CardHeader>
-              <CardTitle className="text-base">Notes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Observations, instructions..."
-              />
-            </CardContent>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </Card>
         </div>
 
-        <div>
-          <Card className="shadow-[var(--shadow-card)] sticky top-6">
+        {/* ── Right column: Récapitulatif + Notes ── */}
+        <div className="flex flex-col gap-6">
+          <Card className="shadow-[var(--shadow-card)]">
             <CardHeader>
               <CardTitle className="text-base">Récapitulatif</CardTitle>
             </CardHeader>
@@ -465,6 +459,19 @@ export default function NouveauBon() {
                   {formatDZD(total)}
                 </span>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-[var(--shadow-card)]">
+            <CardHeader>
+              <CardTitle className="text-base">Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Observations, instructions..."
+              />
             </CardContent>
           </Card>
         </div>

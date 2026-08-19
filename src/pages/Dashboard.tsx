@@ -756,7 +756,7 @@ export default function Dashboard() {
                         variant="ghost"
                         size="sm"
                         className="text-primary h-7 px-2"
-                        onClick={() => navigate('/produits?sort=stock&order=desc')}
+                        onClick={() => navigate('/produits?sort=totalVendu&order=desc')}
                       >
                         Voir plus <ArrowRight className="h-3.5 w-3.5 ml-1" />
                       </Button>

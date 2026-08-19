@@ -32,6 +32,7 @@ export interface Produit {
   description: string;
   prix: number;
   stock: number;
+  totalVendu: number;
   sku?: string;
   barcode?: string;
   purchasePrice?: number;

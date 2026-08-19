@@ -621,9 +621,10 @@ export default function Produits() {
                   <TableHead className="w-[20%] md:w-[15%] lg:w-[12%]">
                     Catégorie
                   </TableHead>
-                  <TableHead className="hidden md:table-cell md:w-[18%] lg:w-[15%]">
+                  {/* SKU column hidden */}
+                  {/* <TableHead className="hidden md:table-cell md:w-[18%] lg:w-[15%]">
                     SKU
-                  </TableHead>
+                  </TableHead> */}
                   <SortableTableHead
                     field="purchasePrice"
                     type="number"
@@ -653,6 +654,15 @@ export default function Produits() {
                     className="text-center w-[15%] md:w-[12%] lg:w-[9%]"
                   >
                     Stock
+                  </SortableTableHead>
+                  <SortableTableHead
+                    field="totalVendu"
+                    type="number"
+                    direction={directionFor('totalVendu')}
+                    onSort={onSort}
+                    className="text-center hidden md:table-cell md:w-[12%] lg:w-[10%]"
+                  >
+                    Total vendu
                   </SortableTableHead>
                   <TableHead className="w-[15%] md:w-[15%] lg:w-[10%]" />
                 </TableRow>
@@ -693,7 +703,8 @@ export default function Produits() {
                           {catLabel[p.categorie]}
                         </span>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
+                      {/* SKU column hidden */}
+                      {/* <TableCell className="hidden md:table-cell">
                         {p.sku ? (
                           <span className="font-mono text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                             {p.sku}
@@ -703,7 +714,7 @@ export default function Produits() {
                             —
                           </span>
                         )}
-                      </TableCell>
+                      </TableCell> */}
                       <TableCell className="text-right hidden lg:table-cell tabular-nums text-sm">
                         {p.purchasePrice != null
                           ? formatDZD(p.purchasePrice)
@@ -729,6 +740,9 @@ export default function Produits() {
                         >
                           {p.stock}
                         </span>
+                      </TableCell>
+                      <TableCell className="text-center hidden md:table-cell tabular-nums text-sm font-medium">
+                        {p.totalVendu ?? 0}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
