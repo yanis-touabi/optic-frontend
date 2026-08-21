@@ -414,17 +414,17 @@ export default function NouveauBon() {
         {/* ── Right sidebar: Total à payer + Récapitulatif + Notes ── */}
         <div
           className="shrink-0 flex flex-col border-l border-border bg-card"
-          style={{ width: '300px' }}
+          style={{ width: '350px' }}
         >
           {/* Total à payer — black & green banner */}
-          <div className="order-total-banner px-5 py-4 border-b border-border">
-            <p className="text-[10px] font-semibold uppercase tracking-widest mb-2"
+        <div className="order-total-banner px-5 py-4 border-b border-border">
+            {/* <p className="text-[10px] font-semibold uppercase tracking-widest mb-2"
                style={{ color: '#4ade80' }}>
               Total à payer
-            </p>
-            <p className="text-3xl font-extrabold leading-none"
-               style={{ color: '#22c55e' }}>
-              {formatDZD(total)}
+            </p> */}
+            <p className="text-3xl tracking-widest leading-none"
+              style={{ color: '#22c55e', fontFamily: "'DSEG7 Classic', monospace" }}>
+              {total} <span style={{ fontFamily: "Arial, sans-serif" }}>DA</span>
             </p>
           </div>
 
