@@ -225,11 +225,33 @@ input[type="number"] {
 .order-header-section {
   background: var(--order-header-bg);
   border-bottom: 1px solid var(--order-header-border);
+  box-shadow: 0 2px 8px -2px hsl(var(--primary) / 0.08);
+}
+
+/* ── Nouveau bon de commande — slim scrollbar in table area ──────────────── */
+.order-table-section::-webkit-scrollbar { width: 5px; }
+.order-table-section::-webkit-scrollbar-track { background: transparent; }
+.order-table-section::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 9999px;
+}
+.order-table-section::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
+}
+/* Firefox */
+.order-table-section {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
 }
 
 /* ── Nouveau bon de commande — articles table section ──────────────────────── */
 .order-table-section {
   background: var(--order-table-bg);
+}
+
+/* ── Nouveau bon de commande — Total à payer black & green banner ───────────── */
+.order-total-banner {
+  background: linear-gradient(135deg, #0d0d0d, #111827);
 }
 
 .order-table-section thead tr {
