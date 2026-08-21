@@ -260,13 +260,13 @@ export default function NouveauBon() {
         <div className="flex flex-col flex-1 min-w-0 min-h-0">
 
           {/* Client / Ordonnance / Date — back in the coloured header band */}
-          <div className="order-header-section shrink-0 grid grid-cols-3 gap-4 px-6 py-4">
+          <div className="order-header-section shrink-0 grid grid-cols-3 gap-4 px-6 py-3">
             <div className="flex flex-col gap-1.5">
-              <Label className="text-blue-800/80 font-medium text-xs uppercase tracking-wide">Client</Label>
+              {/* <Label className="text-blue-800/80 font-medium text-xs uppercase tracking-wide">Client</Label> */}
               <ClientSelect value={clientId} onChange={handleClientChange} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label className="text-blue-800/80 font-medium text-xs uppercase tracking-wide">Ordonnance</Label>
+              {/* <Label className="text-blue-800/80 font-medium text-xs uppercase tracking-wide">Ordonnance</Label> */}
               <OrdonnanceSelect
                 clientId={effectiveClientId}
                 value={ordonnanceId}
@@ -274,7 +274,7 @@ export default function NouveauBon() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label className="text-blue-800/80 font-medium text-xs uppercase tracking-wide">Date de livraison prévue</Label>
+              {/* <Label className="text-blue-800/80 font-medium text-xs uppercase tracking-wide">Date de livraison prévue</Label> */}
               <Input
                 type="date"
                 value={dateLivraison}
@@ -417,7 +417,7 @@ export default function NouveauBon() {
           style={{ width: '300px' }}
         >
           {/* Total à payer — black & green banner */}
-          <div className="order-total-banner px-5 py-5 border-b border-border">
+          <div className="order-total-banner px-5 py-4 border-b border-border">
             <p className="text-[10px] font-semibold uppercase tracking-widest mb-2"
                style={{ color: '#4ade80' }}>
               Total à payer
