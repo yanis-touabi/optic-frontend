@@ -72,6 +72,17 @@
     --order-table-stripe: hsl(38 50% 95%);
     --order-table-border: hsl(38 30% 88%);
 
+    /* ── Nouveau bon de commande — layout dimensions ──────────────────────
+       clamp(min, preferred, max) instead of a fixed px value: the sidebar
+       and the notes box scale with the viewport (vw/vh) but never shrink
+       below a usable size or grow absurdly large on very wide screens. */
+    --order-sidebar-width: clamp(18rem, 24vw, 24rem);
+    --order-notes-height: clamp(5rem, 14vh, 9rem);
+
+    /* ── Nouveau bon de commande — digital total readout ── */
+    --order-total-value: 142 71% 45%; /* bright green, digital-display look */
+    --font-digital: 'DSEG7Classic', 'digital-7', monospace;
+
     --sidebar-background: 215 35% 16%;
     --sidebar-foreground: 210 30% 92%;
     --sidebar-primary: 195 90% 55%;
@@ -236,6 +247,30 @@ input[type="number"] {
   background: var(--order-header-bg);
   border-bottom: 1px solid var(--order-header-border);
   box-shadow: 0 2px 8px -2px hsl(var(--primary) / 0.08);
+}
+
+/* ── Nouveau bon de commande — 2-column / 3-row body grid ─────────────────
+   Row 1: client/ordonnance/date  ↔  total à payer
+   Row 2: produit picker bar      ↔  récapitulatif
+   Row 3: articles table (scrolls) ↔ notes
+   Placing each pair on the same grid row (via row-start-N in the markup)
+   is what keeps their borders aligned, instead of hand-matching padding
+   values on two independent flex columns. */
+.order-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--order-sidebar-width);
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+/* ── Nouveau bon de commande — Total à payer digital readout ─────────────── */
+.order-total-value {
+  color: hsl(var(--order-total-value));
+  font-family: var(--font-digital);
+}
+
+/* ── Nouveau bon de commande — Notes textarea height ──────────────────────── */
+.order-notes-textarea {
+  height: var(--order-notes-height);
 }
 
 /* ── Nouveau bon de commande — slim scrollbar in table area ──────────────── */
