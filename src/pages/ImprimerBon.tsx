@@ -14,6 +14,7 @@ import {
   BonClassique,
   BonCompact,
   BonModerne,
+  BonTicket,
 } from '@/components/print/BonTemplates';
 import { TemplateSelect } from '@/components/TemplateSelect';
 import {
@@ -69,7 +70,14 @@ export default function ImprimerBon() {
       ? BonCompact
       : tpl === 'moderne'
         ? BonModerne
-        : BonClassique;
+        : tpl === 'ticket'
+          ? BonTicket
+          : BonClassique;
+
+  const isTicket = tpl === 'ticket';
+  const previewWidth = isTicket ? '80mm' : '210mm';
+  const printHeight = isTicket ? 'auto' : '297mm';
+  const printPadding = isTicket ? '6mm' : '15mm';
 
   const onDownload = async () => {
     if (!printRef.current) return;
@@ -140,7 +148,7 @@ export default function ImprimerBon() {
           style={{
             transform: `scale(${zoom})`,
             transformOrigin: 'top center',
-            width: '210mm',
+            width: previewWidth,
           }}
           className="print:!transform-none print-wrapper"
         >
@@ -148,9 +156,9 @@ export default function ImprimerBon() {
             ref={printRef}
             className="bg-white shadow-[var(--shadow-card)] print:shadow-none print-area mx-auto"
             style={{
-              width: '210mm',
-              minHeight: '297mm',
-              padding: '15mm',
+              width: previewWidth,
+              minHeight: printHeight,
+              padding: printPadding,
               boxSizing: 'border-box',
             }}
           >

@@ -1,4 +1,4 @@
-export type BonTemplate = 'classique' | 'compact' | 'moderne';
+export type BonTemplate = 'classique' | 'compact' | 'moderne' | 'ticket';
 export type OrdonnanceTemplate = 'classique' | 'compact' | 'detaille';
 
 export const bonTemplates: {
@@ -20,6 +20,11 @@ export const bonTemplates: {
     value: 'moderne',
     label: 'Moderne',
     description: 'En-tête coloré, design épuré',
+  },
+  {
+    value: 'ticket',
+    label: 'Ticket de caisse',
+    description: 'Format reçu thermique étroit (80 mm)',
   },
 ];
 

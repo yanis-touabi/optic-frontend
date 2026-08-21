@@ -380,3 +380,204 @@ export function BonModerne({ cmd, client, ord, store }: Props) {
     </div>
   );
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BonTicket — thermal receipt style, 80 mm wide
+   ───────────────────────────────────────────────────────────────────────── */
+export function BonTicket({ cmd, client, ord, store }: Props) {
+  const dash = '- '.repeat(22);
+  const total = cmd.lignes.reduce((s, l) => s + l.quantite * l.prixUnitaire, 0);
+
+  return (
+    <div
+      className="font-mono text-black"
+      style={{ fontSize: '11px', lineHeight: '1.5', width: '100%' }}
+    >
+      {/* ── Store header ── */}
+      <div className="text-center mb-1">
+        <div style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.05em' }}>
+          {store?.name?.toUpperCase() || 'OPTISHOP'}
+        </div>
+        <div style={{ fontSize: '10px' }}>Magasin d'Optique</div>
+        {store?.address && (
+          <div style={{ fontSize: '10px' }}>{store.address}</div>
+        )}
+        {store?.telephone && (
+          <div style={{ fontSize: '10px' }}>Tél: {store.telephone}</div>
+        )}
+      </div>
+
+      <div className="text-center" style={{ fontSize: '10px', color: '#555' }}>
+        {dash}
+      </div>
+
+      {/* ── Bon info ── */}
+      <div className="text-center mb-1">
+        <div style={{ fontWeight: 700, fontSize: '12px' }}>
+          BON DE COMMANDE N° {cmd.numero}
+        </div>
+        <div style={{ fontSize: '10px' }}>{formatDateTime(cmd.createdAt)}</div>
+      </div>
+
+      <div className="text-center" style={{ fontSize: '10px', color: '#555' }}>
+        {dash}
+      </div>
+
+      {/* ── Client ── */}
+      {client && (
+        <>
+          <div style={{ fontSize: '10px' }}>
+            <span style={{ fontWeight: 600 }}>Client :</span>{' '}
+            {client.prenom} {client.nom}
+          </div>
+          {client.telephone && (
+            <div style={{ fontSize: '10px' }}>
+              <span style={{ fontWeight: 600 }}>Tél :</span> {client.telephone}
+            </div>
+          )}
+          {ord?.nomMedecin && (
+            <div style={{ fontSize: '10px' }}>
+              <span style={{ fontWeight: 600 }}>Dr :</span> {ord.nomMedecin}
+            </div>
+          )}
+          {cmd.dateLivraisonPrevue && (
+            <div style={{ fontSize: '10px' }}>
+              <span style={{ fontWeight: 600 }}>Livraison :</span>{' '}
+              {formatDate(cmd.dateLivraisonPrevue)}
+            </div>
+          )}
+          <div className="text-center" style={{ fontSize: '10px', color: '#555' }}>
+            {dash}
+          </div>
+        </>
+      )}
+
+      {/* ── Prescription summary (compact) ── */}
+      {hasPrescription(ord) && (
+        <>
+          <div style={{ fontWeight: 600, fontSize: '10px', marginBottom: '2px' }}>
+            ORDONNANCE
+          </div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '0 8px',
+              fontSize: '10px',
+              marginBottom: '4px',
+            }}
+          >
+            {[
+              { label: 'OD Sph', val: ord?.odSphere },
+              { label: 'OG Sph', val: ord?.ogSphere },
+              { label: 'OD Cyl', val: ord?.odCylindre },
+              { label: 'OG Cyl', val: ord?.ogCylindre },
+              { label: 'OD Axe', val: ord?.odAxe !== undefined ? `${ord.odAxe}°` : undefined },
+              { label: 'OG Axe', val: ord?.ogAxe !== undefined ? `${ord.ogAxe}°` : undefined },
+              { label: 'OD Add', val: ord?.odAddition },
+              { label: 'OG Add', val: ord?.ogAddition },
+            ]
+              .filter((r) => r.val !== undefined && r.val !== null && r.val !== '')
+              .map((r) => (
+                <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#555' }}>{r.label}</span>
+                  <span style={{ fontWeight: 600 }}>{String(r.val)}</span>
+                </div>
+              ))}
+          </div>
+          <div className="text-center" style={{ fontSize: '10px', color: '#555' }}>
+            {dash}
+          </div>
+        </>
+      )}
+
+      {/* ── Articles ── */}
+      <div style={{ fontWeight: 600, fontSize: '10px', marginBottom: '3px' }}>
+        ARTICLES
+      </div>
+      {cmd.lignes.map((l) => {
+        const lineTotal = l.quantite * l.prixUnitaire;
+        return (
+          <div key={l.id} style={{ marginBottom: '4px' }}>
+            <div style={{ fontWeight: 600 }}>{l.designation}</div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '10px',
+                color: '#333',
+              }}
+            >
+              <span>
+                {l.quantite} × {fmtPrice(l.prixUnitaire)} DZD
+              </span>
+              <span style={{ fontWeight: 700 }}>{fmtPrice(lineTotal)} DZD</span>
+            </div>
+          </div>
+        );
+      })}
+
+      <div className="text-center" style={{ fontSize: '10px', color: '#555' }}>
+        {dash}
+      </div>
+
+      {/* ── Total ── */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontWeight: 700,
+          fontSize: '13px',
+          marginBottom: '2px',
+        }}
+      >
+        <span>TOTAL</span>
+        <span>{fmtPrice(total)} DZD</span>
+      </div>
+
+      <div className="text-center" style={{ fontSize: '10px', color: '#555' }}>
+        {'= '.repeat(22)}
+      </div>
+
+      {/* ── Notes ── */}
+      {cmd.notes && (
+        <div style={{ fontSize: '10px', marginTop: '4px', fontStyle: 'italic' }}>
+          {cmd.notes}
+        </div>
+      )}
+
+      {/* ── Barcode ── */}
+      <div className="flex justify-center mt-3">
+        <Barcode
+          value={String(cmd.numero)}
+          height={32}
+          width={1.2}
+          fontSize={10}
+          margin={0}
+          displayValue={false}
+        />
+      </div>
+      <div className="text-center" style={{ fontSize: '10px', marginTop: '2px' }}>
+        · {cmd.numero} ·
+      </div>
+
+      {/* ── Footer ── */}
+      <div className="text-center" style={{ fontSize: '10px', color: '#555' }}>
+        {dash}
+      </div>
+      <div className="text-center" style={{ fontSize: '10px', marginTop: '2px' }}>
+        Merci de votre confiance !
+      </div>
+      <div className="text-center" style={{ fontSize: '10px', color: '#555' }}>
+        {store?.name || 'Nedhra'} · {store?.telephone || ''}
+      </div>
+
+      {/* ── Signature lines ── */}
+      <div style={{ marginTop: '16px', fontSize: '10px' }}>
+        <div style={{ borderTop: '1px dashed #999', paddingTop: '4px', textAlign: 'center' }}>
+          Signature client
+        </div>
+      </div>
+    </div>
+  );
+}
